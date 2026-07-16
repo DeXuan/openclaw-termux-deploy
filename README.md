@@ -1,6 +1,6 @@
 # OpenClaw 手机部署完全记录（Termux 原生方案）
 
-> **文档版本：v1.3** ｜ 最后更新：2026-07-16 ｜ 版本历史见文末
+> **文档版本：v1.4** ｜ 最后更新：2026-07-16 ｜ 版本历史见文末
 >
 > 部署日期：2026-07-16
 > 设备：Redmi K60 Pro (23013RK75C)，HyperOS / Android 15，8核，16GB 内存
@@ -25,6 +25,7 @@
 - [九、故障排查](#九故障排查)
 - [十、安全加固建议](#十安全加固建议)
 - [十一、卸载与回滚](#十一卸载与回滚)
+- [十二、Tailscale 跨网络固定 IP](#十二tailscale-跨网络固定-ip)
 - [遗留事项](#遗留事项)
 - [附：踩坑速查表](#附本次踩坑速查表)
 
@@ -64,12 +65,14 @@ ifconfig wlan0 | grep inet
 │  │   └─ openclaw gateway :18789 (loopback, token 认证)       │
 │  │        └─ DeepSeek API (deepseek-v4-flash)                │
 │  ├─ termux-wake-lock      ← 防休眠                           │
-│  └─ Termux:Boot v0.8.1    ← 开机自启 ~/.termux/boot/*.sh     │
+│  ├─ Termux:Boot v0.8.1    ← 开机自启 ~/.termux/boot/*.sh     │
+│  └─ Tailscale App 1.98.8  ← 永久固定 IP: 100.118.60.29       │
 └──────────────────────────────────────────────────────────────┘
                           ↑ WiFi 热点（⚠️ 网段每次重启随机变）
                           │
                     PC（Windows）
-          默认网关 = 手机 IP → sshphone 一键自动发现
+     Tailscale: 100.70.110.100 ←─虚拟组网─→ 手机 100.118.60.29
+     sshphone：优先 Tailscale 固定 IP，回退热点网关自动发现
 ```
 
 > 📌 **拓扑关键点**：本环境没有独立路由器 —— PC 连的是**手机热点**，手机既是服务器
@@ -480,12 +483,63 @@ rm -f ~/.termux/boot/start-openclaw.sh
 
 ---
 
+## 十二、Tailscale 跨网络固定 IP
+
+解决"手机换任何网络（热点/WiFi/流量）IP 都会变"的终极方案：双端组虚拟局域网，
+手机获得**永久不变**的 `100.x.x.x` IP，PC 在任何能上网的地方都能直连。
+
+### 12.1 本机组网信息
+
+| 设备 | Tailscale 名 | 固定 IP | 客户端 |
+|------|-------------|---------|--------|
+| 手机 | redmi-k60 | `100.118.60.29` | Android App 1.98.8 |
+| PC | desktop-ooefhtf | `100.70.110.100` | Windows 1.98.9 (winget) |
+
+账号：GitHub（DeXuan），管理后台 https://login.tailscale.com/admin/machines
+
+### 12.2 安装过程
+
+**PC 端**：
+```bash
+winget install tailscale.tailscale
+tailscale login    # 输出授权 URL，浏览器打开登录
+tailscale ip -4    # 查看本机固定 IP
+```
+
+**手机端**：
+> ⚠️ 坑 12：Termux 命令行版 tailscale 不可用 —— 官方 Go 二进制在 Android 上
+> `SIGSYS: bad system call`（seccomp 拦截 `faccessat2`），Termux 官方仓库也无此包。
+> **必须用官方 Android App**（走系统 VPN 接口，无 seccomp 问题，自带开机自连）。
+
+1. 下载 APK：GitHub `tailscale/tailscale-android` releases（约 100MB），
+   scp 传到手机 `~/storage/downloads/`，文件管理器安装（同坑 8 流程）
+2. 打开 App → Sign in（与 PC 同一账号）→ 同意 VPN 连接请求
+3. 系统设置 → VPN → Tailscale 齿轮 → **始终开启 VPN**（重启自动连）
+
+### 12.3 使用
+
+```bash
+# SSH：sshphone 已自动优先走 Tailscale（不通才回退热点网关发现）
+sshphone 'sv status openclaw'
+
+# 手动直连（任何网络下都是这个地址）
+ssh -p 8022 u0_a197@100.118.60.29
+
+# Dashboard 隧道（跨网络也能用）
+sshphone -N -L 18789:127.0.0.1:18789
+```
+
+> 💡 gateway 仍绑定 loopback（安全默认）。如想让 PC 免隧道直接访问 Dashboard，
+> 可把 `openclaw.json` 的 `gateway.bind` 改为 `"tailnet"`，风险自担（有 token 认证）。
+
+---
+
 ## 遗留事项
 
 - [x] 手机重启一次，验证开机自启全链路（2026-07-16 已验证通过：sshd 自启 ✅，gateway 修复 PATH 坑后自启 ✅，E2E 模型调用 ✅）
 - [x] boot 脚本加一行 `sshd`，让重启后 SSH 也自动可用（2026-07-16 已加）
 - [x] 路由器后台给手机绑定静态 IP（不适用：本拓扑无路由器，手机热点网段随机且无 root 不可固定 → 已用 `sshphone` 动态发现方案根治，见 1.3）
-- [ ] 可选：Tailscale 组网，获得跨网络永久固定 IP（OpenClaw 配置原生支持 tailscale 集成）
+- [x] 可选：Tailscale 组网，获得跨网络永久固定 IP（2026-07-16 已完成，见第十二章；sshphone 已升级为 Tailscale 优先）
 - [ ] 可选：清理配置里的 stale 插件项 `plugins.entries.qwen-portal-auth`（无害警告）
 - [ ] 可选：按需接入消息渠道（Telegram / 企业微信 / WhatsApp，见 8.4）
 
@@ -506,6 +560,7 @@ rm -f ~/.termux/boot/start-openclaw.sh
 | 9 | termux-open 无反应 | Android 禁止后台应用弹界面 | Termux 切前台后再触发 |
 | 10 | 重启后服务崩溃循环 `openclaw: not found` | Termux:Boot 环境的 PATH 无 `~/.npm-global/bin` | run 脚本里写 openclaw **绝对路径** |
 | 11 | 手机重启后 IP 变了连不上 | HyperOS 热点重启随机换网段 | 用 `sshphone` 脚本自动发现（原理：手机 = PC 网关） |
+| 12 | Termux 版 tailscale 崩溃 `SIGSYS` | Android seccomp 拦截 Go 的 `faccessat2` 调用 | 用官方 Android App（系统 VPN 接口） |
 
 ---
 
@@ -517,3 +572,4 @@ rm -f ~/.termux/boot/start-openclaw.sh
 | v1.1 | 2026-07-16 | boot 脚本加入 sshd；完善结构：新增目录、前置条件、重启验证方法、升级/排障/安全加固/卸载章节，踩坑 9 |
 | v1.2 | 2026-07-16 | 重启实测通过；发现并修复坑 10（runit 服务需写 openclaw 绝对路径） |
 | v1.3 | 2026-07-16 | 发现真实网络拓扑（PC 连手机热点，无独立路由器）；新增 sshphone 自动发现脚本（1.3 节）根治 IP 漂移，踩坑 11 |
+| v1.4 | 2026-07-16 | Tailscale 双端组网（第十二章）：手机获得永久固定 IP 100.118.60.29，任何网络可达；sshphone 升级为 Tailscale 优先 + 热点网关回退，踩坑 12 |

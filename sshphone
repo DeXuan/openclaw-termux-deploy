@@ -1,9 +1,15 @@
 #!/bin/bash
-# sshphone — 自动发现手机热点 IP 并 SSH（手机 = PC 默认网关，网段随机也不怕）
-# 用法: sshphone [命令...]   无参数进交互 shell
-GW=$(powershell -NoProfile -Command "(Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Sort-Object RouteMetric | Select-Object -First 1 -ExpandProperty NextHop)" | tr -d '\r\n ')
-if [ -z "$GW" ]; then
-  echo "错误: 未找到默认网关（PC 没连手机热点？）" >&2
-  exit 1
+# sshphone — SSH 到手机（优先 Tailscale 固定 IP，回退热点网关自动发现）
+# 用法: sshphone [命令/ssh选项...]   无参数进交互 shell
+TS_IP="100.118.60.29"   # redmi-k60 的 Tailscale 永久 IP（任何网络下不变）
+if timeout 2 bash -c "</dev/tcp/$TS_IP/8022" 2>/dev/null; then
+  HOST="$TS_IP"
+else
+  # 回退：PC 连手机热点时，手机 = PC 默认网关
+  HOST=$(powershell -NoProfile -Command "(Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Sort-Object RouteMetric | Select-Object -First 1 -ExpandProperty NextHop)" | tr -d '\r\n ')
+  if [ -z "$HOST" ]; then
+    echo "错误: Tailscale 不可达，且未找到默认网关" >&2
+    exit 1
+  fi
 fi
-exec ssh -p 8022 -o HostKeyAlias=termux-phone -o StrictHostKeyChecking=accept-new u0_a197@"$GW" "$@"
+exec ssh -p 8022 -o HostKeyAlias=termux-phone -o StrictHostKeyChecking=accept-new u0_a197@"$HOST" "$@"
