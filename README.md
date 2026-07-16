@@ -369,6 +369,13 @@ sshphone 'export SVDIR=$PREFIX/var/service; sv status openclaw; curl -s -o /dev/
   sshphone -N -L 18789:127.0.0.1:18789
   # 然后 PC 浏览器打开 http://127.0.0.1:18789
   ```
+- **PC 免令牌一键打开**：token 可以放在 URL 片段里自动登录（UI 读取后存入当前标签页
+  sessionStorage 并从地址栏清除）：
+  ```
+  http://127.0.0.1:18789/#token=<gateway.auth.token 的值>
+  ```
+  已做成桌面双击脚本 `OpenClaw控制台.bat`：检测隧道 → 没有就用 sshphone 自动建 →
+  带 token 打开浏览器。⚠️ 该脚本内嵌 token，仅存本机，勿提交仓库/外发。
 
 ### 8.2 常用管理命令（SSH 上手机后）
 
