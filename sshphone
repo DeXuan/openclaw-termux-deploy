@@ -1,0 +1,9 @@
+#!/bin/bash
+# sshphone — 自动发现手机热点 IP 并 SSH（手机 = PC 默认网关，网段随机也不怕）
+# 用法: sshphone [命令...]   无参数进交互 shell
+GW=$(powershell -NoProfile -Command "(Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Sort-Object RouteMetric | Select-Object -First 1 -ExpandProperty NextHop)" | tr -d '\r\n ')
+if [ -z "$GW" ]; then
+  echo "错误: 未找到默认网关（PC 没连手机热点？）" >&2
+  exit 1
+fi
+exec ssh -p 8022 -o HostKeyAlias=termux-phone -o StrictHostKeyChecking=accept-new u0_a197@"$GW" "$@"
