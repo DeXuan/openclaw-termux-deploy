@@ -711,7 +711,7 @@ export NODE_OPTIONS="--dns-result-order=ipv4first"
 - [x] 路由器后台给手机绑定静态 IP（不适用：本拓扑无路由器，手机热点网段随机且无 root 不可固定 → 已用 `sshphone` 动态发现方案根治，见 1.3）
 - [x] 可选：Tailscale 组网，获得跨网络永久固定 IP（2026-07-16 已完成，见第十二章；sshphone 已升级为 Tailscale 优先）
 - [ ] 可选：清理配置里的 stale 插件项 `plugins.entries.qwen-portal-auth`（无害警告）
-- [ ] 可选：按需接入消息渠道（Telegram / 企业微信 / WhatsApp，见 8.4）
+- [x] 按需接入消息渠道（2026-07-17 已接入 QQ 机器人并实测对话正常，见第十四章；飞书/企业微信可按需再加）
 
 ---
 
