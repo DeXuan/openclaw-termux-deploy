@@ -1,6 +1,6 @@
 # OpenClaw 手机部署完全记录（Termux 原生方案）
 
-> **文档版本：v1.6** ｜ 最后更新：2026-07-17 ｜ 版本历史见文末
+> **文档版本：v1.7** ｜ 最后更新：2026-07-17 ｜ 版本历史见文末
 >
 > 部署日期：2026-07-16
 > 设备：Redmi K60 Pro (23013RK75C)，HyperOS / Android 15，8核，16GB 内存
@@ -624,6 +624,26 @@ adb shell "cmd deviceidle whitelist" | grep -E "termux|tailscale"
 > 💡 com.termux 与 com.termux.boot 共享 UID，白名单一个即覆盖两者。
 > 本机已于 2026-07-17 全部执行并验证生效。
 
+### 补充加固（第二轮体检发现）
+
+```bash
+# 6. 热点永不空闲自动关闭（PC 靠手机热点上网时必设，否则 PC 断开片刻热点就自动关）
+adb shell "settings put global soft_ap_timeout_enabled 0"
+
+# 7. 禁止系统对关键应用"自动撤销未使用应用的权限"
+#    Termux:Boot / Tailscale 这类装完几乎不再打开的应用，数月后会被系统自动休眠并
+#    撤销权限 —— 开机自启链会静默断裂，且很难排查
+for p in com.termux com.termux.boot com.tailscale.ipn; do
+  adb shell "cmd appops set $p AUTO_REVOKE_PERMISSIONS_IF_UNUSED ignore"
+done
+
+# 体检命令（只读，可随时复查）
+adb shell "settings get global low_power"                      # 0 = 省电模式关
+adb shell "am get-standby-bucket com.termux"                   # 5 = EXEMPTED 最优
+adb shell "cmd appops get com.termux RUN_ANY_IN_BACKGROUND"    # allow
+adb shell "cmd app_hibernation get-state --global com.termux"  # false = 未休眠
+```
+
 ---
 
 ## 遗留事项
@@ -667,3 +687,4 @@ adb shell "cmd deviceidle whitelist" | grep -E "termux|tailscale"
 | v1.4 | 2026-07-16 | Tailscale 双端组网（第十二章）：手机获得永久固定 IP 100.118.60.29，任何网络可达；sshphone 升级为 Tailscale 优先 + 热点网关回退，踩坑 12 |
 | v1.5 | 2026-07-17 | 服务器化加固（第十三章）：adb 关闭 phantom process killer、锁定 device_config、Termux/Tailscale 加入 Doze 白名单；8.1 补充 PC 免令牌访问 |
 | v1.6 | 2026-07-17 | 新增「方案评估」章节：手机作服务器的适用场景、优势对比（VPS/树莓派）、不足与缓解措施 |
+| v1.7 | 2026-07-17 | 第二轮 adb 体检与加固：热点禁止空闲自动关闭、关键应用禁止权限自动撤销；附只读体检命令集 |
