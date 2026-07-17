@@ -1,3 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/sh
 exec 2>&1
+# force IPv4 first: QQ bot IP whitelist only accepts IPv4
+export NODE_OPTIONS="--dns-result-order=ipv4first"
 exec /data/data/com.termux/files/home/.npm-global/bin/openclaw gateway
