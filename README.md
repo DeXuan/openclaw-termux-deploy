@@ -1,6 +1,6 @@
 # OpenClaw 手机部署完全记录（Termux 原生方案）
 
-> **文档版本：v1.9** ｜ 最后更新：2026-07-17 ｜ 版本历史见文末
+> **文档版本：v1.10** ｜ 最后更新：2026-07-17 ｜ 版本历史见文末
 >
 > 部署日期：2026-07-16
 > 设备：Redmi K60 Pro (23013RK75C)，HyperOS / Android 15，8核，16GB 内存
@@ -30,6 +30,7 @@
 - [十三、服务器化加固（adb 关闭进程杀手）](#十三服务器化加固adb-关闭进程杀手)
 - [十四、接入 QQ 机器人](#十四接入-qq-机器人)
 - [十五、定时任务（每日基金分析）](#十五定时任务每日基金分析)
+- [十六、接入飞书](#十六接入飞书)
 - [遗留事项](#遗留事项)
 - [附：踩坑速查表](#附本次踩坑速查表)
 
@@ -744,6 +745,81 @@ openclaw cron rm <id>             # 删除
 
 ---
 
+## 十六、接入飞书
+
+飞书是 QQ 之外的另一个国内渠道。相比 QQ，飞书**无 IP 白名单限制**、WebSocket 长连接、
+个人免费注册，但配置流程有一处关键陷阱。
+
+### 16.1 安装配置
+
+```bash
+openclaw plugins install @openclaw/feishu
+
+# 推荐使用交互式向导（终端里跑）：
+openclaw channels login --channel feishu
+# 选 Manual setup → 输入 App ID + App Secret
+
+# 无交互配置（直接改 openclaw.json）：
+# 在 channels 下添加 feishu: { enabled: true, appId: "cli_a...", appSecret: "...",
+#   dmPolicy: "pairing", groupPolicy: "allowlist", requireMention: true }
+```
+
+### 16.2 飞书平台标配流程
+
+1. https://open.feishu.cn → 创建企业自建应用
+2. **添加能力 → 机器人** → 启用
+3. **权限管理** → 开通以下核心权限：
+   - `im:message`（获取与发送消息）
+   - `im:message:send_as_bot`（以应用身份发消息）
+   - `contact:contact.base:readonly`（通讯录，**应用身份**）
+   - `im:resource:upload`（图片上传，发照片必需）
+4. **事件订阅** → 添加 `im.message.receive_v1` → 选 **WebSocket 长连接**
+5. **应用发布 → 创建版本 → 发布**
+
+### 16.3 坑 15：`230101 Sending messages to users is temporarily unavailable`
+
+这是飞书对接中最大的坑（耗时最长）。现象：应用权限全开、版本已发布、WebSocket 已连接，
+机器人能收到消息但回复永远失败 `230101`。**直接用 curl 调飞书发送 API 也同样报错**，证明是平台侧限制。
+
+根因：企业自建应用在部分企业账号下需要审核流程，审核可能卡住。飞书官方推荐方案：
+
+> **自行创建一个新企业**（飞书 App → 头像 → 创建新企业），在新企业中创建应用可实现**发布免审**，
+> `230101` 不会再出现。
+
+新企业创建后，重新走 16.2 标配流程 → 拿到新的 App ID/Secret → 替换配置 → 重启网关即可。
+
+整个过程的其他小问题：
+- 配对码：默认 `dmPolicy: "pairing"`，新用户首次发消息会收到 6 位配对码，
+  执行 `openclaw pairing approve feishu <CODE>` 后永久有效
+- 图片发送：需额外开通 `im:resource:upload` 权限，否则拍照后只发文件路径不发图片
+- 频繁重启会触发 `restart-loop breaker`（保护机制），等 5 分钟冷却或用 `openclaw doctor --fix`
+  修复后再重启
+
+### 16.4 双渠道共存
+
+QQ 和飞书可以同时在线、互不影响：
+
+```
+# 验证
+openclaw channels status --probe
+# → QQ Bot default:   ... connected ✅
+# → Feishu default:   ... connected ✅
+```
+
+两者共享同一个 DeepSeek 模型和 phone-control 插件，对哪个渠道说话效果完全一样。
+
+### 16.5 本机飞书配置
+
+| 项目 | 值 |
+|------|---|
+| App ID | `cli_aad362f211b9dd05`（新企业，免审） |
+| 首次 App ID | `cli_aad3700337ba9d0c`（旧企业，230101 卡住，已弃用） |
+| dmPolicy | `pairing`（需批准配对码） |
+| streaming | `false`（纯文本，不用卡片消息） |
+| 图片上传权限 | `im:resource:upload` 已开通 |
+
+---
+
 ## 遗留事项
 
 - [x] 手机重启一次，验证开机自启全链路（2026-07-16 已验证通过：sshd 自启 ✅，gateway 修复 PATH 坑后自启 ✅，E2E 模型调用 ✅）
@@ -789,4 +865,4 @@ openclaw cron rm <id>             # 删除
 | v1.6 | 2026-07-17 | 新增「方案评估」章节：手机作服务器的适用场景、优势对比（VPS/树莓派）、不足与缓解措施 |
 | v1.7 | 2026-07-17 | 第二轮 adb 体检与加固：热点禁止空闲自动关闭、关键应用禁止权限自动撤销；附只读体检命令集 |
 | v1.8 | 2026-07-17 | 接入 QQ 机器人（第十四章）：官方插件 + WebSocket 网关；踩坑 13/14（AppSecret 掩码、IP 白名单/IPv6 出口问题及 NODE_OPTIONS 修复）；服务脚本同步更新 |
-| v1.9 | 2026-07-17 | 定时任务（第十五章）：每日 9 点基金分析推 QQ；Termux:API 摄像头拍照（F-Droid 签名版 installation + denyCommands 解除）；可复用部署技能 openclaw-android-deploy 发布 |
+| v1.10 | 2026-07-17 | 接入飞书（第十六章）：双渠道共存、230101 大坑及新企业免审方案、restart-loop breaker 修复、图片上传权限；踩坑 15/16 |
