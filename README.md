@@ -1,6 +1,6 @@
 # OpenClaw 手机部署完全记录（Termux 原生方案）
 
-> **文档版本：v1.4** ｜ 最后更新：2026-07-16 ｜ 版本历史见文末
+> **文档版本：v1.5** ｜ 最后更新：2026-07-17 ｜ 版本历史见文末
 >
 > 部署日期：2026-07-16
 > 设备：Redmi K60 Pro (23013RK75C)，HyperOS / Android 15，8核，16GB 内存
@@ -26,6 +26,7 @@
 - [十、安全加固建议](#十安全加固建议)
 - [十一、卸载与回滚](#十一卸载与回滚)
 - [十二、Tailscale 跨网络固定 IP](#十二tailscale-跨网络固定-ip)
+- [十三、服务器化加固（adb 关闭进程杀手）](#十三服务器化加固adb-关闭进程杀手)
 - [遗留事项](#遗留事项)
 - [附：踩坑速查表](#附本次踩坑速查表)
 
@@ -541,6 +542,40 @@ sshphone -N -L 18789:127.0.0.1:18789
 
 ---
 
+## 十三、服务器化加固（adb 关闭进程杀手）
+
+Android 12+ 的 **phantom process killer** 限制第三方应用的子进程总数（默认 32 个），
+超限会随机杀进程 —— 手机当服务器跑多个服务时这是最大隐患。关闭需要 adb（一次性操作）：
+
+**前置**：手机开 USB 调试（设置 → 更多设置 → 开发者选项 → USB 调试），USB 连接电脑，
+授权弹窗勾选"始终允许"。
+
+```bash
+adb devices                # 确认设备出现且状态为 device
+
+# 1. 关闭 phantom process 监控（settings 持久，重启不丢）
+adb shell "settings put global settings_enable_monitor_phantom_procs false"
+
+# 2. 上限调到最大 + 锁定 device_config 不被云端配置重置
+adb shell "device_config set_sync_disabled_for_tests persistent"
+adb shell "device_config put activity_manager max_phantom_processes 2147483647"
+
+# 3. Termux / Tailscale 加入 Doze 省电白名单
+adb shell "cmd deviceidle whitelist +com.termux"
+adb shell "cmd deviceidle whitelist +com.tailscale.ipn"
+
+# 验证
+adb shell "settings get global settings_enable_monitor_phantom_procs"   # → false
+adb shell "device_config get activity_manager max_phantom_processes"    # → 2147483647
+adb shell "device_config get_sync_disabled_for_tests"                   # → persistent
+adb shell "cmd deviceidle whitelist" | grep -E "termux|tailscale"
+```
+
+> 💡 com.termux 与 com.termux.boot 共享 UID，白名单一个即覆盖两者。
+> 本机已于 2026-07-17 全部执行并验证生效。
+
+---
+
 ## 遗留事项
 
 - [x] 手机重启一次，验证开机自启全链路（2026-07-16 已验证通过：sshd 自启 ✅，gateway 修复 PATH 坑后自启 ✅，E2E 模型调用 ✅）
@@ -580,3 +615,4 @@ sshphone -N -L 18789:127.0.0.1:18789
 | v1.2 | 2026-07-16 | 重启实测通过；发现并修复坑 10（runit 服务需写 openclaw 绝对路径） |
 | v1.3 | 2026-07-16 | 发现真实网络拓扑（PC 连手机热点，无独立路由器）；新增 sshphone 自动发现脚本（1.3 节）根治 IP 漂移，踩坑 11 |
 | v1.4 | 2026-07-16 | Tailscale 双端组网（第十二章）：手机获得永久固定 IP 100.118.60.29，任何网络可达；sshphone 升级为 Tailscale 优先 + 热点网关回退，踩坑 12 |
+| v1.5 | 2026-07-17 | 服务器化加固（第十三章）：adb 关闭 phantom process killer、锁定 device_config、Termux/Tailscale 加入 Doze 白名单；8.1 补充 PC 免令牌访问 |
