@@ -1,6 +1,6 @@
 # OpenClaw 手机部署完全记录（Termux 原生方案）
 
-> **文档版本：v1.8** ｜ 最后更新：2026-07-17 ｜ 版本历史见文末
+> **文档版本：v1.9** ｜ 最后更新：2026-07-17 ｜ 版本历史见文末
 >
 > 部署日期：2026-07-16
 > 设备：Redmi K60 Pro (23013RK75C)，HyperOS / Android 15，8核，16GB 内存
@@ -29,6 +29,7 @@
 - [十二、Tailscale 跨网络固定 IP](#十二tailscale-跨网络固定-ip)
 - [十三、服务器化加固（adb 关闭进程杀手）](#十三服务器化加固adb-关闭进程杀手)
 - [十四、接入 QQ 机器人](#十四接入-qq-机器人)
+- [十五、定时任务（每日基金分析）](#十五定时任务每日基金分析)
 - [遗留事项](#遗留事项)
 - [附：踩坑速查表](#附本次踩坑速查表)
 
@@ -704,6 +705,45 @@ export NODE_OPTIONS="--dns-result-order=ipv4first"
 
 ---
 
+## 十五、定时任务（每日基金分析）
+
+OpenClaw 内置 cron 守护进程，可设置定时任务让 AI 主动推送消息到 QQ。
+
+### 15.1 创建任务
+
+```bash
+openclaw cron add --tz Asia/Shanghai \
+  --cron "0 9 * * 1-5" \      # 工作日 9:00
+  --channel qqbot --to default \
+  --thinking medium --timeout-seconds 300 \
+  "每日基金分析" \
+  "用 search 工具查今天 A 股大盘指数和 4 只基金净值(161725/000961/005827/003095)，输出简报"
+```
+
+### 15.2 管理命令
+
+```bash
+openclaw cron list                 # 所有任务
+openclaw cron show <id>           # 任务详情（含最后运行状态）
+openclaw cron runs --id <jobId>   # 运行历史
+openclaw cron run <id> --wait     # 手动触发测试
+openclaw cron rm <id>             # 删除
+```
+
+### 15.3 本机配置
+
+| 项目 | 值 |
+|------|---|
+| 任务 ID | `15b43e8e-96a0-476e-8f50-371bd9181462` |
+| 时间 | 工作日 09:00（Asia/Shanghai） |
+| 推送渠道 | QQ 私聊 |
+| 超时 | 300 秒 |
+
+⚠️ 教训：DeepSeek 的 `thinking=high` + 大量 search 工具调用可能触发 180 秒超时。
+建议用 `thinking=medium` + 精简 prompt，让模型控制 search 次数。
+
+---
+
 ## 遗留事项
 
 - [x] 手机重启一次，验证开机自启全链路（2026-07-16 已验证通过：sshd 自启 ✅，gateway 修复 PATH 坑后自启 ✅，E2E 模型调用 ✅）
@@ -749,3 +789,4 @@ export NODE_OPTIONS="--dns-result-order=ipv4first"
 | v1.6 | 2026-07-17 | 新增「方案评估」章节：手机作服务器的适用场景、优势对比（VPS/树莓派）、不足与缓解措施 |
 | v1.7 | 2026-07-17 | 第二轮 adb 体检与加固：热点禁止空闲自动关闭、关键应用禁止权限自动撤销；附只读体检命令集 |
 | v1.8 | 2026-07-17 | 接入 QQ 机器人（第十四章）：官方插件 + WebSocket 网关；踩坑 13/14（AppSecret 掩码、IP 白名单/IPv6 出口问题及 NODE_OPTIONS 修复）；服务脚本同步更新 |
+| v1.9 | 2026-07-17 | 定时任务（第十五章）：每日 9 点基金分析推 QQ；Termux:API 摄像头拍照（F-Droid 签名版 installation + denyCommands 解除）；可复用部署技能 openclaw-android-deploy 发布 |
