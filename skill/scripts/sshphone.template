@@ -1,0 +1,19 @@
+#!/bin/bash
+# sshphone — 一键 SSH 到手机服务器（PC 端，Git Bash）
+# 模板变量：部署时替换 __TS_IP__（Tailscale 固定 IP，未配则留空）和 __SSH_USER__
+# 安装：填好变量后存为 ~/bin/sshphone && chmod +x ~/bin/sshphone
+TS_IP="__TS_IP__"        # 例: 100.118.60.29；未配 Tailscale 则留空
+SSH_USER="__SSH_USER__"  # Termux sshd 不校验用户名，任意即可，例: u0_a197
+
+if [ -n "$TS_IP" ] && timeout 2 bash -c "</dev/tcp/$TS_IP/8022" 2>/dev/null; then
+  HOST="$TS_IP"   # 优先 Tailscale 固定 IP：任何网络下可达
+else
+  # 回退：PC 连手机热点时，手机 = PC 默认网关（Windows）
+  HOST=$(powershell -NoProfile -Command "(Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Sort-Object RouteMetric | Select-Object -First 1 -ExpandProperty NextHop)" | tr -d '\r\n ')
+  if [ -z "$HOST" ]; then
+    echo "错误: Tailscale 不可达，且未找到默认网关（PC 没连手机热点？）" >&2
+    exit 1
+  fi
+fi
+# HostKeyAlias 让 known_hosts 与 IP 解耦，换网段不弹指纹确认
+exec ssh -p 8022 -o HostKeyAlias=termux-phone -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$HOST" "$@"
