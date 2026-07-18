@@ -1,7 +1,7 @@
 # 机型适配矩阵与最佳实践
 
 > 本文档回答三个问题：**新机型怎么接入**、**已知机型有什么坑**、**怎么安全升级版本**。
-> 部署主流程见 [SKILL.md](../SKILL.md) 阶段 0-8；报错速查见 [pitfalls.md](pitfalls.md)（21 坑）。
+> 部署主流程见 [SKILL.md](../SKILL.md) 阶段 0-8；报错速查见 [pitfalls.md](pitfalls.md)（23 坑）。
 
 ## 0. 使用地图
 
@@ -64,6 +64,7 @@
 ### 低端 SoC（骁龙 6xx 及以下）/ 小内存（≤4GB）
 - gateway 冷启动到 listening 要 **40–60 秒**（骁龙660 实测）；升级后首启含 state 迁移可达 **2.5–3 分钟**（骁龙625 实测）→ 验证门的 curl 多等一会，别急着判失败
 - 3GB RAM 机型只做供应商节点/轻量渠道聊天，别跑重 agent 工作流
+- 同一时刻只跑**一个** openclaw CLI 实例（login / probe / agent 均为完整 node 进程）——3GB 机双开 login 实测把 gateway 连坐 OOM（坑 23）
 
 ## 4. 已验证机型档案（4 台真机，2026-07 实测）
 
@@ -72,7 +73,7 @@
 | Redmi K60（23013RK75C） | Android 15 / HyperOS (V816) | 骁龙8+ Gen1 / 16GB | 主力机 | QQ bot + 飞书 | 全套 adb 加固必做 |
 | Xiaomi MIX 2S | Android 10 / MIUI 12.5.1 | 骁龙845 / 6GB | 副机 | QQ bot + 飞书 | 免 phantom 加固 |
 | Redmi Note 7 | Android 10 / MIUI 12.5.7 | 骁龙660 / 6GB | 全流程验证机 | 飞书 + QQ bot | gateway 冷启动 40-60s |
-| Redmi Note 4X | Android 7.0 / MIUI 11 | 骁龙625 / 3GB | 轻量双渠道节点 | QQ bot + 飞书 | 无 Tailscale；node 手动 deb（§6） |
+| Redmi Note 4X | Android 7.0 / MIUI 11 | 骁龙625 / 3GB | 轻量三渠道节点 | QQ bot + 飞书 + 微信（官方 iLink） | 无 Tailscale；node 手动 deb（§6）；微信首装验证机（channel-weixin.md） |
 
 ### 工具版本组合（2026-07-18 全队定版，全部四连验证通过）
 
