@@ -132,12 +132,14 @@ ssh -p 8022 user@<IP> 'getprop ro.product.model; getprop ro.product.marketname; 
 
 **APK 安装包速查**（按机型适配）：
 
-| APK | 适用 | 下载源 | 安装方式 |
-|---|---|---|---|
-| Termux 主程序 | 全机型 | F-Droid 官网/镜像 | 直装（勿用 Play 版） |
-| Termux:Boot `com.termux.boot_1000.apk` | 全机型必装 | `mirrors.tuna.tsinghua.edu.cn/fdroid/repo/`（F-Droid 签名配 F_DROID 版主程序，坑 7） | cp 到 `~/storage/downloads/` → 文件管理器**按路径**安装（坑 8/9） |
-| Tailscale `tailscale-android-universal-*.apk` | **Android 8+**（A7 装不上） | `pkgs.tailscale.com/stable/`（GitHub CDN 被阻断、ghproxy 全灭时的可达源） | 同上；装后设「始终开启 VPN」 |
-| Termux:API `com.termux.api_1002.apk`（v0.53.0） | 需拍照/传感器的机器 | 清华 F-Droid 镜像（GitHub debug 版签名不兼容报 -8） | 同上 |
+| APK | 适用 | 下载源 | 安装方式 | Release 直链 |
+|---|---|---|---|---|
+| Termux 主程序 `com.termux_0.118.0-fdroid.apk` | ✅ 全机型（A7-15 四机实测） | F-Droid 官网/镜像 | 直装（勿用 Play 版） | [下载](https://github.com/DeXuan/openclaw-termux-deploy/releases/download/v2.3-packages/com.termux_0.118.0-fdroid.apk) |
+| Termux:Boot `com.termux.boot_0.8.1.apk` | ✅ 全机型必装 | 清华 F-Droid 镜像（坑 7：必须与主程序同 F-Droid 签名） | cp 到 `~/storage/downloads/` → 文件管理器**按路径**安装（坑 8/9） | [下载](https://github.com/DeXuan/openclaw-termux-deploy/releases/download/v2.3-packages/com.termux.boot_0.8.1.apk) |
+| Tailscale `tailscale-android-universal-1.98.8.apk` | ⚠️ **仅 Android 8+**（K60/MIX 2S/Note 7）；A7 装不上 | `pkgs.tailscale.com/stable/`（官网直链，GitHub CDN 被阻断时用） | 同上；装后设「始终开启 VPN」 | [下载](https://github.com/DeXuan/openclaw-termux-deploy/releases/download/v2.3-packages/tailscale-android-universal-1.98.8.apk) |
+| Termux:API `com.termux.api_0.53.0.apk` | 需拍照/传感器的机器（K60 实测） | 清华 F-Droid 镜像（GitHub debug 版签名不兼容报 -8） | 同上 | [下载](https://github.com/DeXuan/openclaw-termux-deploy/releases/download/v2.3-packages/com.termux.api_0.53.0.apk) |
+
+> 💡 **全部安装包已归档到 GitHub Release [v2.3-packages](https://github.com/DeXuan/openclaw-termux-deploy/releases/tag/v2.3-packages)**，含五文件 + 机型对照表（OpenClaw/Node/libsqlite 组合）+ `nodejs_26.4.0_aarch64.deb`（Termux 仓库无合规 Node 时的救命包，坑 18）。Release 版文件与终端 curl 镜像版完全相同，网络受限时优先用 Release 直链。
 
 **按 Android 版本选加固动作**（决定第七章哪些项必做）：
 
@@ -323,9 +325,11 @@ chmod +x ~/.termux/boot/start-services.sh
 >
 > ⚠️ 坑 9：安装后**务必打开一次** Termux:Boot（注册开机广播）；设置 → Termux → 省电策略 → **无限制**。
 
-F-Droid 版下载（清华镜像）：
+F-Droid 版下载（清华镜像或 GitHub Release）：
 ```bash
 curl -sL -o ~/termux-boot.apk "https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux.boot_1000.apk"
+# 或从 GitHub Release 下载（网络受限时友好）：
+# https://github.com/DeXuan/openclaw-termux-deploy/releases/download/v2.3-packages/com.termux.boot_0.8.1.apk
 cp ~/termux-boot.apk ~/storage/downloads/
 ```
 
@@ -777,4 +781,4 @@ rm -f ~/.termux/boot/start-services.sh
 | **v2.0** | 2026-07-17 | **文档重构**：按功能模块重组为六大部分（基础/服务化/网络/应用/功能/运维），章节从 15 章精简为 18 章+3 附录 |
 | v2.1 | 2026-07-18 | 机型适配矩阵：4 台真机（K60/MIX 2S/Note 7/Note 4X，Android 7/10/15）+ 按版本加固决策树；多机多 bot 分诊与白名单联动经验；OpenClawX App 协议不匹配处置；型号修正（23013RK75C 实为 K60 非 Pro） |
 | v2.2 | 2026-07-18 | 全队定版 2026.7.1-2：四台全双渠道（QQ×4 + 飞书×4）实测通过；适配矩阵渠道列与文档头更新；Note 4X 升格为轻量双渠道节点（Node 手动 deb + hold） |
-| v2.3 | 2026-07-18 | 升级章重写为金丝雀 SOP（Node/libsqlite 双重检查 + 手动 deb + 迁移锁 + auth store，全命令可执行）；适配矩阵新增全队工具版本组合表、新机型接入工作流、APK 安装包速查表；机型经验补 MAC 随机化/pm 可见性/首启迁移时长；sshphone 章加机队多脚本命名；坑表 16→21（+libsqlite/手动 deb/迁移锁/auth store/无 tmp）+ 场景索引 |
+| v2.3 | 2026-07-18 | 升级章重写为金丝雀 SOP（Node/libsqlite 双重检查 + 手动 deb + 迁移锁 + auth store，全命令可执行）；适配矩阵新增全队工具版本组合表、新机型接入工作流、APK 安装包速查表 + **Release 下载直链**；机型经验补 MAC 随机化/pm 可见性/首启迁移时长；sshphone 章加机队多脚本命名；坑表 16→21（+libsqlite/手动 deb/迁移锁/auth store/无 tmp）+ 场景索引；GitHub Release **v2.3-packages**（五安装包 + 机型对照）；技能新增 phone_check_env.sh（机型体检）+ phone_install_openclaw.sh 增强（安装前合规预检） |
