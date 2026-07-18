@@ -1,12 +1,12 @@
 # OpenClaw 手机部署完全记录（Termux 原生方案）
 
-> **文档版本：v2.1** ｜ 最后更新：2026-07-18 ｜ 版本历史见文末
+> **文档版本：v2.3** ｜ 最后更新：2026-07-18 ｜ 版本历史见文末
 >
 > 部署日期：2026-07-16（首台）
 > 设备：已验证 4 台真机机队 —— Redmi K60（23013RK75C，Android 15/HyperOS）· Xiaomi MIX 2S（Android 10）· Redmi Note 7（Android 10）· Redmi Note 4X（Android 7），适配矩阵见「方案评估」章
-> 环境：Termux 0.118.0（F-Droid 版），Node.js v24.17.0
-> 模型：DeepSeek V4 Flash（`deepseek/deepseek-v4-flash`）；Note 4X 为 qwen-portal
-> 渠道：QQ 机器人 ×3 + 飞书，多渠道在线
+> 环境：Termux 0.118.0（F-Droid 版），Node.js 24.17.0 / 26.4.0（按机型，见适配矩阵）
+> 模型：DeepSeek V4 Flash（`deepseek/deepseek-v4-flash`）全队统一
+> 渠道：QQ 机器人 ×4 + 飞书 ×4，四台全双渠道在线（2026-07-18 实测定版，OpenClaw 2026.7.1-2）
 > GitHub：https://github.com/DeXuan/openclaw-termux-deploy
 
 ---
@@ -40,7 +40,7 @@
   - [十七、安全加固建议](#十七安全加固建议)
   - [十八、卸载与回滚](#十八卸载与回滚)
 - **附录**
-  - [踩坑速查表](#附一踩坑速查表16-坑)
+  - [踩坑速查表](#附一踩坑速查表21-坑)
   - [渠道选择对比](#附二渠道选择对比)
   - [版本历史](#附三版本历史)
 
@@ -93,10 +93,51 @@
 
 | 机型（实测型号） | 系统 | SoC / RAM | 角色 | 渠道 |
 |---|---|---|---|---|
-| Redmi K60（23013RK75C） | Android 15 / HyperOS (V816) | 骁龙8+ Gen1 / 16GB | 主力机 | QQ 机器人 |
-| Xiaomi MIX 2S | Android 10 / MIUI 12.5.1 | 骁龙845 / 6GB | 副机 | QQ 机器人 |
-| Redmi Note 7 | Android 10 / MIUI 12.5.7 | 骁龙660 / 6GB | 全流程验证机 | 飞书 + QQ 机器人 |
-| Redmi Note 4X | Android 7.0 / MIUI 11 | 骁龙625 / 3GB | 边缘节点 | —（仅模型供应商） |
+| Redmi K60（23013RK75C） | Android 15 / HyperOS (V816) | 骁龙8+ Gen1 / 16GB | 主力机 | QQ 机器人 + 飞书 |
+| Xiaomi MIX 2S | Android 10 / MIUI 12.5.1 | 骁龙845 / 6GB | 副机 | QQ 机器人 + 飞书 |
+| Redmi Note 7 | Android 10 / MIUI 12.5.7 | 骁龙660 / 6GB | 全流程验证机 | QQ 机器人 + 飞书 |
+| Redmi Note 4X | Android 7.0 / MIUI 11 | 骁龙625 / 3GB | 轻量双渠道节点 | QQ 机器人 + 飞书 |
+
+> 2026-07-18 定版：四台全部双渠道（QQ + 飞书）接入并经真实消息实测通过，OpenClaw 统一 2026.7.1-2。
+
+**全队工具版本组合**（升级实战定版，全部通过四连验证；升级流程见第十六章）：
+
+| 设备 | OpenClaw | Node | libsqlite | Node 来源 |
+|---|---|---|---|---|
+| K60 | 2026.7.1-2 | 24.17.0 | 3.53.3 | 仓库（早期 nodejs-lts） |
+| MIX 2S | 2026.7.1-2 | 26.4.0 | 3.53.3 | 仓库（撤版前安装） |
+| Note 7 | 2026.7.1-2 | 26.4.0 | 3.53.3 | 仓库（撤版前安装） |
+| Note 4X | 2026.7.1-2 | 26.4.0 | 3.53.0 | **手动 deb + apt-mark hold**（坑 18） |
+
+各机版本取数命令：
+
+```bash
+openclaw --version
+node --version
+node -e "const s=require('node:sqlite');console.log(new s.DatabaseSync(':memory:').prepare('select sqlite_version() v').get().v)"
+```
+
+**新机型接入工作流**（适配更多机型按此走）：
+
+```
+① 识别 → ② 对号入座 → ③ 叠加注意项 → ④ 部署 → ⑤ 登记
+```
+
+```bash
+# ① 识别（SSH 可用后第一件事；型号考证以 marketname 为准）
+ssh -p 8022 user@<IP> 'getprop ro.product.model; getprop ro.product.marketname; getprop ro.build.version.release; getprop ro.miui.ui.version.name'
+```
+
+② 按 Android 版本查下方决策树定加固动作集与 Tailscale 可用性 → ③ 按系统皮肤/硬件档位叠加"机型专属经验" → ④ 走第一~六章部署，每章过验证门 → ⑤ 验证全过后，把新机型补进上面两张表（机型行 + 版本组合行）。
+
+**APK 安装包速查**（按机型适配）：
+
+| APK | 适用 | 下载源 | 安装方式 |
+|---|---|---|---|
+| Termux 主程序 | 全机型 | F-Droid 官网/镜像 | 直装（勿用 Play 版） |
+| Termux:Boot `com.termux.boot_1000.apk` | 全机型必装 | `mirrors.tuna.tsinghua.edu.cn/fdroid/repo/`（F-Droid 签名配 F_DROID 版主程序，坑 7） | cp 到 `~/storage/downloads/` → 文件管理器**按路径**安装（坑 8/9） |
+| Tailscale `tailscale-android-universal-*.apk` | **Android 8+**（A7 装不上） | `pkgs.tailscale.com/stable/`（GitHub CDN 被阻断、ghproxy 全灭时的可达源） | 同上；装后设「始终开启 VPN」 |
+| Termux:API `com.termux.api_1002.apk`（v0.53.0） | 需拍照/传感器的机器 | 清华 F-Droid 镜像（GitHub debug 版签名不兼容报 -8） | 同上 |
 
 **按 Android 版本选加固动作**（决定第七章哪些项必做）：
 
@@ -108,9 +149,9 @@
 
 **机型专属经验**：
 
-- **HyperOS（小米 Android 14+）**：APK 安装遇 content:// "解析软件包错误"（坑 8）走文件管理器按路径安装；关 phantom killer 后必须锁 `device_config`（persistent）防云端回滚
-- **MIUI 12.5（Android 10 代）**：普通「USB 调试」没有 WRITE_SECURE_SETTINGS（`settings put` 被拒），改 settings 需开「USB 调试（安全设置）」（要插 SIM + 登小米账号）；调试开关会静默弹回，SSH 里 `getprop sys.usb.config` 含 adb 才算真开；openssh 装完 `sshd: no hostkeys available` → `ssh-keygen -A`
-- **低端 SoC（骁龙 6xx 及以下）**：gateway 冷启动到 listening 要 40–60 秒（Note 7 实测），验证 curl 多等一会；3GB RAM 机型（Note 4X）只做供应商节点/轻量任务
+- **HyperOS（小米 Android 14+）**：APK 安装遇 content:// "解析软件包错误"（坑 8）走文件管理器按路径安装；关 phantom killer 后必须锁 `device_config`（persistent）防云端回滚；Termux 内 `pm list packages` 受包可见性限制会**漏报**（termux.boot/tailscale 明明装了却查不到）→ 验证已装用 adb 或看重启行为
+- **MIUI 12.5（Android 10 代）**：普通「USB 调试」没有 WRITE_SECURE_SETTINGS（`settings put` 被拒），改 settings 需开「USB 调试（安全设置）」（要插 SIM + 登小米账号）；调试开关会静默弹回，SSH 里 `getprop sys.usb.config` 含 adb 才算真开；openssh 装完 `sshd: no hostkeys available` → `ssh-keygen -A`；Android 10 默认**按网络随机化 MAC** → 路由器 MAC 绑定前先在 WLAN 详情改「使用设备 MAC」（否则"忘记网络"重连后绑定失效）
+- **低端 SoC（骁龙 6xx 及以下）**：gateway 冷启动到 listening 要 40–60 秒（Note 7 实测）；**升级后首启含 state 迁移可达 2.5–3 分钟**（Note 4X 实测），验证 curl 多等一会别急着判失败；3GB RAM 机型（Note 4X）只做供应商节点/轻量渠道聊天
 - **多机 QQ 机器人机队**：每台设备注册**独立 AppID**（QQ 里是不同的聊天窗口）。"无响应"先分清用户发的是哪个 bot 的窗口再查对应设备日志——一台白名单 401 离线时另一台日志完全正常，极易误判（2026-07-18 实例）。同一宽带下所有设备出口 IPv4 相同，宽带重拨后**所有 bot 白名单要一起更新**；白名单加好后无需重启，插件每分钟自动重试，约 1 分钟自愈
 - **OpenClawX App 协议不匹配**：gateway 日志每 0.4s 刷 `protocol mismatch client=OpenClawX Node ... expected=4`（ua=Dart，来源 127.0.0.1）= 本机 OpenClawX App 太旧，升级或卸载即止；只费电刷日志，不影响渠道
 
@@ -385,6 +426,8 @@ exec ssh -p 8022 -o HostKeyAlias=termux-phone -o StrictHostKeyChecking=accept-ne
 
 用法：`sshphone`（进 shell）/ `sshphone '命令'` / `sshphone -N -L 18789:127.0.0.1:18789`（Dashboard 隧道）
 
+> 💡 **机队多脚本命名**（2026-07-18 经验）：设备一多，共用一个 `sshphone` 会名不符实（TS_IP 被改指别的机器都难发现）。按设备命名一机一脚本（如 `sshk60` / `sshmix2s` / `ssh4x` / `sshnote7`），每个脚本：自己的 Tailscale IP 优先 + 局域网固定 IP（或热点网关发现）回退 + **独立 HostKeyAlias**（如 `termux-note7`，known_hosts 与 IP 解耦，换网不弹指纹确认）。无 Tailscale 的 A7 机型直接局域网 IP + 路由器 MAC 绑定。
+
 ---
 
 # 第四部分：对接应用
@@ -598,14 +641,55 @@ openclaw cron rm <id>                  # 删除
 | 配置改坏 | `~/.openclaw/` 下有自动备份 `openclaw.json.bak.*` |
 | 频繁重启后服务不加载渠道 | restart-loop breaker 触发 → `openclaw doctor --fix` |
 
-### 升级 OpenClaw
+### 升级 OpenClaw（金丝雀 SOP，2026-07-18 全队升级实战定稿）
+
+**⚠️ 升级前必读**：OpenClaw 2026.7.1-x 起有**双重启动检查**，任一不过 = 拒启崩溃循环（坑 17/18）：
+
+1. **CLI 层 Node 版本号**：`>=22.22.3 <23`、`>=24.15.0 <25` 或 `>=25.9.0`（26.x 满足最后一档）
+2. **运行层 SQLite ≥3.51.3**（WAL 损坏防护）。Termux 的 node **动态链接系统 `libsqlite` 包**——报 "SQLite unsafe" 时错误文案会怪罪 Node，**真正的修法只是升 libsqlite**
+
+**Step 0 — 逐台体检（不合规先修，再动 OpenClaw）**：
+
+```bash
+node --version        # 对照上面三档
+node -e "const s=require('node:sqlite');console.log(new s.DatabaseSync(':memory:').prepare('select sqlite_version() v').get().v)"   # 需 ≥3.51.3
+
+# libsqlite 不合规 → 一条命令修复（3.51.2 → 3.53.x）
+apt update && apt install --only-upgrade -y libsqlite
+
+# node 不合规 → 先查仓库有无合规版
+apt list -a nodejs nodejs-lts
+# 仓库全不合规时（2026-07-18 现状：25.8.2 / 24.14.1 各差 0.0.1），pool 里直接下 deb：
+# ⚠️ Termux 没有 /tmp！输出路径写 $HOME（坑 21）
+curl -4 -L -o $HOME/nodejs_26.4.0.deb \
+  https://mirrors.ustc.edu.cn/termux/apt/termux-main/pool/main/n/nodejs/nodejs_26.4.0_aarch64.deb
+dpkg -i $HOME/nodejs_26.4.0.deb
+apt-mark hold nodejs        # 锁版，防 apt upgrade 回退到不合规版本
+# node 换过版本后，下一步的 npm 重装 openclaw 是必须的（native 模块按新 ABI 重编）
+```
+
+**Step 1 — 单台金丝雀升级**：
 
 ```bash
 export GYP_DEFINES="android_ndk_path="
 npm install -g --allow-scripts=openclaw,@google/genai,protobufjs,tree-sitter-bash openclaw@latest
-export SVDIR=$PREFIX/var/service && sv down openclaw && sv up openclaw
-openclaw doctor  # 大版本升级后自动迁移配置
+export SVDIR=$PREFIX/var/service && sv restart openclaw
 ```
+
+**Step 2 — 耐心等首启迁移**：升级后首启会跑 state 迁移（低端机 2–3 分钟）。**期间别反复 restart**——会打断迁移留下迁移锁（报 `startup migrations are already running`，坑 19），出现该报错就停手，锁约 2 分钟自动过期，runit 会自己完成。
+
+**Step 3 — 四连验证，全过再推其余设备**：
+
+```bash
+sv status openclaw                                                # → run 且 uptime 持续增长
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:18789/    # → 200
+openclaw channels status --probe                                  # → 渠道 connected
+openclaw agent --agent main --message "只回复OK"                   # → OK
+```
+
+> ⚠️ E2E 报 `No API key found for provider`：`~/.openclaw/agents/main/agent/openclaw-agent.sqlite` 是 **auth store（API key）+ 会话记忆**（坑 20）——排障时若挪动过它，把三件套（含 `-wal`/`-shm`）放回原位再重启。
+>
+> 💡 事故参考：并行升 4 台 = 渠道可能全队离线。金丝雀流程下实际只有 1 台中招离线 40 分钟，其余 3 台无恙。
 
 ---
 
@@ -633,7 +717,9 @@ rm -f ~/.termux/boot/start-services.sh
 
 # 附录
 
-## 附一：踩坑速查表（16 坑）
+## 附一：踩坑速查表（21 坑）
+
+**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15 · **升级 17/18/19/20**
 
 | # | 现象 | 原因 | 解法 |
 |---|------|------|------|
@@ -653,6 +739,11 @@ rm -f ~/.termux/boot/start-services.sh
 | 14 | QQ 渠道 IP 白名单 401 | 强制 IPv4 + IPv6 出口 + 蜂窝漂移 | NODE_OPTIONS 强制 IPv4 |
 | 15 | 飞书 `230101` 无法发消息 | 企业审核卡住 | 创建新企业免审（第十二章） |
 | 16 | 频繁重启触发 restart-loop breaker | `sv down/up` 过于频繁 | `openclaw doctor --fix` |
+| 17 | gateway 崩溃循环 `SQLite support is unavailable or unsafe... requires 3.51.3+` | Termux 的 node 动态链接系统 `libsqlite`（3.51.2 有 WAL 损坏 bug）；**错误文案怪 Node 是误导** | `apt install --only-upgrade libsqlite`，Node/OpenClaw 都不用动 |
+| 18 | CLI 拒跑 `Node.js >=22.22.3 <23, >=24.15.0 <25, or >=25.9.0 is required` | 仓库索引现版全不合规，26.4.0 被撤出索引 | pool 里 deb 仍在：`curl` + `dpkg -i` + `apt-mark hold nodejs`；装后**必须重装 openclaw** |
+| 19 | 升级后反复报 `startup migrations are already running` | 首启 state 迁移被频繁 restart 打断，留迁移锁 | **停手别再 restart**，锁 ~2 分钟自动过期自愈 |
+| 20 | E2E 报 `No API key found for provider` | `agents/main/agent/openclaw-agent.sqlite`（**auth store + 会话记忆**）被挪动 | sqlite 三件套（含 -wal/-shm）放回原位重启 |
+| 21 | Termux 里 `curl -o /tmp/xxx` 静默失败 | **Termux 没有 `/tmp`** | 输出路径用 `$HOME` 或 `$PREFIX/tmp` |
 
 ---
 
@@ -685,3 +776,5 @@ rm -f ~/.termux/boot/start-services.sh
 | v1.10 | 2026-07-17 | 飞书接入；坑 15（230101 新企业免审）+ 坑 16（restart-loop breaker） |
 | **v2.0** | 2026-07-17 | **文档重构**：按功能模块重组为六大部分（基础/服务化/网络/应用/功能/运维），章节从 15 章精简为 18 章+3 附录 |
 | v2.1 | 2026-07-18 | 机型适配矩阵：4 台真机（K60/MIX 2S/Note 7/Note 4X，Android 7/10/15）+ 按版本加固决策树；多机多 bot 分诊与白名单联动经验；OpenClawX App 协议不匹配处置；型号修正（23013RK75C 实为 K60 非 Pro） |
+| v2.2 | 2026-07-18 | 全队定版 2026.7.1-2：四台全双渠道（QQ×4 + 飞书×4）实测通过；适配矩阵渠道列与文档头更新；Note 4X 升格为轻量双渠道节点（Node 手动 deb + hold） |
+| v2.3 | 2026-07-18 | 升级章重写为金丝雀 SOP（Node/libsqlite 双重检查 + 手动 deb + 迁移锁 + auth store，全命令可执行）；适配矩阵新增全队工具版本组合表、新机型接入工作流、APK 安装包速查表；机型经验补 MAC 随机化/pm 可见性/首启迁移时长；sshphone 章加机队多脚本命名；坑表 16→21（+libsqlite/手动 deb/迁移锁/auth store/无 tmp）+ 场景索引 |

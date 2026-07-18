@@ -1,6 +1,8 @@
-# 踩坑速查（16 坑全录）
+# 踩坑速查（21 坑全录）
 
-按报错现象查找。来源：2026-07 四台真机（K60 / MIX 2S / Note 7 / Note 4X）实战部署。
+按报错现象查找。来源：2026-07 四台真机（K60 / MIX 2S / Note 7 / Note 4X）实战部署与全队升级。
+
+**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15 · **升级 17/18/19/20**
 
 | # | 现象 | 原因 | 解法 |
 |---|------|------|------|
@@ -20,6 +22,11 @@
 | 14 | QQ 渠道 `接口访问源IP不在白名单`（401） | 平台强制 IPv4 白名单 + Node 走 IPv6 出口 + 蜂窝 IP 漂移 | 见下方详解 |
 | 15 | 飞书 `230101 Sending messages to users is temporarily unavailable` | 企业审核卡住 | 创建新企业免审（详见部署文档第十二章） |
 | 16 | 频繁 `sv down/up` 后服务不加载渠道 | restart-loop breaker 触发 | `openclaw doctor --fix` |
+| 17 | gateway 崩溃循环 `SQLite support is unavailable or unsafe... requires SQLite 3.51.3+` | Termux 的 node 动态链接系统 `libsqlite` 包（3.51.2 有 WAL 损坏 bug），**错误文案怪 Node 版本是误导** | `apt install --only-upgrade libsqlite`（→3.53.x）即解，Node/OpenClaw 都不用动 |
+| 18 | CLI 拒跑 `Node.js >=22.22.3 <23, >=24.15.0 <25, or >=25.9.0 is required` | Termux 仓库索引现版全不合规（25.8.2/24.14.1 各差 0.0.1），26.4.0 被撤出索引 | pool 里 deb 仍在：手动 `curl` + `dpkg -i` 装 26.4.0 + `apt-mark hold nodejs` 锁版；装后**必须重装 openclaw**（native ABI） |
+| 19 | 升级后反复报 `startup migrations are already running for this state directory` | 首启 state 迁移被频繁 `sv restart` 打断，留下迁移锁 | **停手别再 restart**，锁 ~2 分钟自动过期，runit 会自己完成迁移 |
+| 20 | E2E 报 `No API key found for provider "..."，Auth store: .../openclaw-agent.sqlite` | 排障时挪走了 `agents/main/agent/openclaw-agent.sqlite`——它是 **auth store（API key）+ 会话记忆** | 把备份的 sqlite 三件套（含 -wal/-shm）放回原位再重启 |
+| 21 | Termux 里 `curl -o /tmp/xxx` 静默失败（文件不存在） | **Termux 没有 `/tmp` 目录** | 输出路径用 `$HOME` 或 `$PREFIX/tmp` |
 
 ## 坑 14 详解：QQ IP 白名单
 
@@ -41,6 +48,7 @@ export NODE_OPTIONS="--dns-result-order=ipv4first"
 
 ## 其他经验
 
+- **升级用金丝雀流程**（2026-07-18 全队 -2 升级实录）：单台先升（libsqlite → node 合规确认 → npm 升 openclaw → sv restart → 四连验证），全过再推其余设备。当天并行升 4 台的话会全队渠道离线——实际单台中招离线 40 分钟,其余 3 台无恙
 - **多设备多 QQ bot 误诊**（2026-07-18）："QQ 无响应"先分清用户发消息的是哪个 bot 的窗口——机队每台设备挂独立 AppID，一台 401 离线时另一台日志完全正常，容易误判成"新部署的坏了"。对号入座方法见 device-matrix.md 机队经验
 - **gateway 日志刷 `protocol mismatch client=OpenClawX Node ... expected=4`**（ua=Dart，127.0.0.1 每 0.4s 一次）：本机装的 OpenClawX App 客户端协议版本旧于 gateway，升级或卸载该 App 即止；只费电刷日志，不影响渠道
 - **白名单修好后无需重启**：qqbot 插件每分钟自动重试 /gateway，白名单生效后约 1 分钟自动恢复（2026-07-18 实测：401 离线 2.5h → 加 IP → 62s 后 Gateway ready）
