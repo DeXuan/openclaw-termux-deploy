@@ -1,12 +1,12 @@
 # OpenClaw 手机部署完全记录（Termux 原生方案）
 
-> **文档版本：v2.4** ｜ 最后更新：2026-07-19 ｜ 版本历史见文末
+> **文档版本：v2.5** ｜ 最后更新：2026-07-19 ｜ 版本历史见文末
 >
 > 部署日期：2026-07-16（首台）
 > 设备：已验证 4 台真机机队 —— Redmi K60（23013RK75C，Android 15/HyperOS）· Xiaomi MIX 2S（Android 10）· Redmi Note 7（Android 10）· Redmi Note 4X（Android 7），适配矩阵见「方案评估」章
 > 环境：Termux 0.118.0（F-Droid 版），Node.js 24.17.0 / 26.4.0（按机型，见适配矩阵）
 > 模型：DeepSeek V4 Flash（`deepseek/deepseek-v4-flash`）全队统一
-> 渠道：QQ 机器人 ×4 + 飞书 ×4 + 微信官方 iLink ×1（Note 4X），四台全双渠道在线（2026-07-18 实测定版，OpenClaw 2026.7.1-2）
+> 渠道：QQ 机器人 ×4 + 飞书 ×4 + 微信官方 iLink ×4（Note 4X 已绑定在线，其余三台已装待绑），四台全渠道在线（OpenClaw 2026.7.1-2）
 > GitHub：https://github.com/DeXuan/openclaw-termux-deploy
 
 ---
@@ -41,7 +41,7 @@
   - [十八、安全加固建议](#十八安全加固建议)
   - [十九、卸载与回滚](#十九卸载与回滚)
 - **附录**
-  - [踩坑速查表](#附一踩坑速查表23-坑)
+  - [踩坑速查表](#附一踩坑速查表24-坑)
   - [渠道选择对比](#附二渠道选择对比)
   - [版本历史](#附三版本历史)
 
@@ -94,9 +94,9 @@
 
 | 机型（实测型号） | 系统 | SoC / RAM | 角色 | 渠道 |
 |---|---|---|---|---|
-| Redmi K60（23013RK75C） | Android 15 / HyperOS (V816) | 骁龙8+ Gen1 / 16GB | 主力机 | QQ 机器人 + 飞书 |
-| Xiaomi MIX 2S | Android 10 / MIUI 12.5.1 | 骁龙845 / 6GB | 副机 | QQ 机器人 + 飞书 |
-| Redmi Note 7 | Android 10 / MIUI 12.5.7 | 骁龙660 / 6GB | 全流程验证机 | QQ 机器人 + 飞书 |
+| Redmi K60（23013RK75C） | Android 15 / HyperOS (V816) | 骁龙8+ Gen1 / 16GB | 主力机 | QQ 机器人 + 飞书 + 微信（官方 iLink，待绑） |
+| Xiaomi MIX 2S | Android 10 / MIUI 12.5.1 | 骁龙845 / 6GB | 副机 | QQ 机器人 + 飞书 + 微信（官方 iLink，待绑） |
+| Redmi Note 7 | Android 10 / MIUI 12.5.7 | 骁龙660 / 6GB | 全流程验证机 | QQ 机器人 + 飞书 + 微信（官方 iLink，待绑） |
 | Redmi Note 4X | Android 7.0 / MIUI 11 | 骁龙625 / 3GB | 轻量三渠道节点 | QQ 机器人 + 飞书 + 微信（官方 iLink） |
 
 > 2026-07-18 定版：四台全部双渠道（QQ + 飞书）接入并经真实消息实测通过，OpenClaw 统一 2026.7.1-2。
@@ -557,6 +557,8 @@ openclaw plugins install @openclaw/feishu
 
 2026-07 腾讯官方为 OpenClaw 发布的微信通道（npm scope `@tencent-weixin`，iLink 协议连 `ilinkai.weixin.qq.com`，配套《微信ClawBot功能使用条款》）。纯出站长连接，**无 IP 白名单**，与飞书同级省心。Note 4X（Android 7 / 3GB）首装实测，与 QQ/飞书三渠道共存。
 
+2026-07-19 已**全队铺开**：四台均装好插件并完成 `plugins.allow` 加固（追加用并集，别覆盖别机已有名单），Note 4X 绑定在线，其余三台待绑。**安装与绑定可分离**——未绑定的渠道空载无副作用，插件先铺、账号后补；绑定一台一个微信号，同号重复绑会互踢。
+
 ### 安装（一条命令）
 
 ```bash
@@ -582,7 +584,7 @@ ssh -n -p 8022 user@<IP> 'grep -o "https://liteapp.weixin.qq.com[^[:space:]]*" ~
 
 同一时刻只跑**一个** openclaw CLI 实例——双开 login 实测把 gateway 连坐 OOM（runit 15 秒自愈）；`channels status --probe` 同理过重，渠道验证改 grep 服务日志。
 
-完整 SOP（含 pkill 自杀坑、`plugins.allow` 加固）见技能文档 [skill/references/channel-weixin.md](skill/references/channel-weixin.md)。
+完整 SOP（含 pkill 自杀坑、`plugins.allow` 加固、配置写回竞态坑 24）见技能文档 [skill/references/channel-weixin.md](skill/references/channel-weixin.md)。
 
 ---
 
@@ -755,9 +757,9 @@ rm -f ~/.termux/boot/start-services.sh
 
 # 附录
 
-## 附一：踩坑速查表（23 坑）
+## 附一：踩坑速查表（24 坑）
 
-**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15/22 · **升级 17/18/19/20** · 资源 23
+**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16/24 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15/22 · **升级 17/18/19/20** · 资源 23
 
 | # | 现象 | 原因 | 解法 |
 |---|------|------|------|
@@ -784,6 +786,7 @@ rm -f ~/.termux/boot/start-services.sh
 | 21 | Termux 里 `curl -o /tmp/xxx` 静默失败 | **Termux 没有 `/tmp`** | 输出路径用 `$HOME` 或 `$PREFIX/tmp` |
 | 22 | 微信安装器报"未找到 openclaw"（实际在 PATH） | Termux 默认无 `which` 二进制，安装器 `which openclaw` 检测失败 | `pkg install which` 后重跑 |
 | 23 | 双开 openclaw CLI 后 SSH 全断、gateway 被杀 | CLI 均为完整 node 实例，3GB 机内存压爆 LMK 连坐 | 单机单 CLI 实例；渠道验证 grep 日志；runit 自愈 |
+| 24 | 改完 `plugins.allow` 重启后仍报 "allow is empty" | 旧 gateway 退出瞬间把内存旧配置写回覆盖（竞态） | `sv down`→改→`sv up`；或重启后 grep 校验，仍在再重启一次 |
 
 ---
 
@@ -820,3 +823,4 @@ rm -f ~/.termux/boot/start-services.sh
 | v2.2 | 2026-07-18 | 全队定版 2026.7.1-2：四台全双渠道（QQ×4 + 飞书×4）实测通过；适配矩阵渠道列与文档头更新；Note 4X 升格为轻量双渠道节点（Node 手动 deb + hold） |
 | v2.3 | 2026-07-18 | 升级章重写为金丝雀 SOP（Node/libsqlite 双重检查 + 手动 deb + 迁移锁 + auth store，全命令可执行）；适配矩阵新增全队工具版本组合表、新机型接入工作流、APK 安装包速查表 + **Release 下载直链**；机型经验补 MAC 随机化/pm 可见性/首启迁移时长；sshphone 章加机队多脚本命名；坑表 16→21（+libsqlite/手动 deb/迁移锁/auth store/无 tmp）+ 场景索引；GitHub Release **v2.3-packages**（五安装包 + 机型对照）；技能新增 phone_check_env.sh（机型体检）+ phone_install_openclaw.sh 增强（安装前合规预检） |
 | v2.4 | 2026-07-19 | 微信官方 iLink 渠道接入（腾讯 `@tencent-weixin`，无 IP 白名单）：新增第十三章 + 技能 channel-weixin.md 完整 SOP（远程扫码链接法 / plugins.allow 加固）；坑表 21→23（which 缺失误报 / 低内存并发 CLI OOM）；Note 4X 升格三渠道节点（QQ+飞书+微信）实测共存；第五/六部分章节号顺延 |
+| v2.5 | 2026-07-19 | 微信渠道**全队铺开**：K60/MIX 2S/Note 7 插件安装 + `plugins.allow` 并集加固（安装与绑定分离，三台待绑），重启后三台 E2E 全过、K60 三渠道 probe connected；坑表 23→24（配置写回竞态：改 allow 稳妥流程 `sv down`→改→`sv up`）；机型矩阵渠道列与文档头更新 |

@@ -1,8 +1,8 @@
-# 踩坑速查（23 坑全录）
+# 踩坑速查（24 坑全录）
 
 按报错现象查找。来源：2026-07 四台真机（K60 / MIX 2S / Note 7 / Note 4X）实战部署与全队升级。
 
-**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15/22 · **升级 17/18/19/20** · 资源 23
+**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16/24 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15/22 · **升级 17/18/19/20** · 资源 23
 
 | # | 现象 | 原因 | 解法 |
 |---|------|------|------|
@@ -29,6 +29,7 @@
 | 21 | Termux 里 `curl -o /tmp/xxx` 静默失败（文件不存在） | **Termux 没有 `/tmp` 目录** | 输出路径用 `$HOME` 或 `$PREFIX/tmp` |
 | 22 | 微信官方安装器报 `未找到 openclaw，请先安装`（实际 openclaw 在 PATH 且能跑） | 安装器用 `execSync("which openclaw")` 检测宿主，Termux 默认**没有 `which` 二进制**（`command -v` 是 shell 内建，人工验证时反而发现不了差异） | `pkg install which` 后重跑安装器 |
 | 23 | 双开 openclaw CLI（如两个 `channels login`）后 SSH 全断 exit 255、gateway 被杀重启 | 每个 CLI 都是完整 node 实例（数百 MB），3GB 机内存压爆触发 LMK 连坐；`channels status --probe` 同理过重卡死 | 单机同一时刻只跑**一个** CLI 实例；渠道验证改 grep 服务日志；gateway 靠 runit 自愈（15s） |
+| 24 | 改完 `plugins.allow` 重启后日志仍报 `plugins.allow is empty` | 修改配置时 gateway 正在运行，其收到 TERM 退出瞬间把内存里的旧配置**写回覆盖**了新文件（Note 7 实测中招，其余三台一次成功，属竞态） | 稳妥流程 `sv down` → 改配置 → `sv up`；或改完重启后 `grep "allow is empty"` 校验，仍在就再重启一次 |
 
 ## 坑 14 详解：QQ IP 白名单
 
