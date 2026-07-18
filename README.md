@@ -1,12 +1,12 @@
 # OpenClaw 手机部署完全记录（Termux 原生方案）
 
-> **文档版本：v2.0（重构版）** ｜ 最后更新：2026-07-17 ｜ 版本历史见文末
+> **文档版本：v2.1** ｜ 最后更新：2026-07-18 ｜ 版本历史见文末
 >
-> 部署日期：2026-07-16
-> 设备：Redmi K60 Pro (23013RK75C)，HyperOS / Android 15，8核，16GB 内存
+> 部署日期：2026-07-16（首台）
+> 设备：已验证 4 台真机机队 —— Redmi K60（23013RK75C，Android 15/HyperOS）· Xiaomi MIX 2S（Android 10）· Redmi Note 7（Android 10）· Redmi Note 4X（Android 7），适配矩阵见「方案评估」章
 > 环境：Termux 0.118.0（F-Droid 版），Node.js v24.17.0
-> 模型：DeepSeek V4 Flash（`deepseek/deepseek-v4-flash`）
-> 渠道：QQ 机器人 + 飞书 双渠道在线
+> 模型：DeepSeek V4 Flash（`deepseek/deepseek-v4-flash`）；Note 4X 为 qwen-portal
+> 渠道：QQ 机器人 ×3 + 飞书，多渠道在线
 > GitHub：https://github.com/DeXuan/openclaw-termux-deploy
 
 ---
@@ -14,6 +14,7 @@
 ## 目录
 
 - [方案评估：手机作为服务器](#方案评估手机作为服务器)
+  - [已验证机型与适配矩阵](#已验证机型与适配矩阵)
 - **第一部分：基础部署**
   - [一、前置条件（手机端首次准备）](#一前置条件手机端首次准备)
   - [二、SSH 免密登录](#二ssh-免密登录)
@@ -85,6 +86,33 @@
 | 长期插电伤电池 | 系统电池保护限充电上限 80% | 📱手动 |
 
 **底线**：接受"不做公网大流量、不跑持续满载"两条边界——就是一台配置优于入门 VPS 的低功耗便携服务器。
+
+### 已验证机型与适配矩阵
+
+本方案已在 4 台真机上完整验证（2026-07，数据来自 `getprop` 实测；型号考证以 `ro.product.marketname` 为准，23013RK75C 实为 K60 标准版而非 Pro）：
+
+| 机型（实测型号） | 系统 | SoC / RAM | 角色 | 渠道 |
+|---|---|---|---|---|
+| Redmi K60（23013RK75C） | Android 15 / HyperOS (V816) | 骁龙8+ Gen1 / 16GB | 主力机 | QQ 机器人 |
+| Xiaomi MIX 2S | Android 10 / MIUI 12.5.1 | 骁龙845 / 6GB | 副机 | QQ 机器人 |
+| Redmi Note 7 | Android 10 / MIUI 12.5.7 | 骁龙660 / 6GB | 全流程验证机 | 飞书 + QQ 机器人 |
+| Redmi Note 4X | Android 7.0 / MIUI 11 | 骁龙625 / 3GB | 边缘节点 | —（仅模型供应商） |
+
+**按 Android 版本选加固动作**（决定第七章哪些项必做）：
+
+| Android 版本 | phantom process killer | 权限自动撤销 | Doze 白名单 | Tailscale App |
+|---|---|---|---|---|
+| 12+（K60） | ⚠️ **必关**（adb） | ⚠️ **必禁** | 必做 | ✅ |
+| 8–11（MIX 2S、Note 7） | 无此机制，跳过 | A11+ 才有 | 必做 | ✅ |
+| ≤7（Note 4X） | 无 | 无 | 必做 | ❌ 装不上，走局域网直连 + 路由器 MAC 绑定 |
+
+**机型专属经验**：
+
+- **HyperOS（小米 Android 14+）**：APK 安装遇 content:// "解析软件包错误"（坑 8）走文件管理器按路径安装；关 phantom killer 后必须锁 `device_config`（persistent）防云端回滚
+- **MIUI 12.5（Android 10 代）**：普通「USB 调试」没有 WRITE_SECURE_SETTINGS（`settings put` 被拒），改 settings 需开「USB 调试（安全设置）」（要插 SIM + 登小米账号）；调试开关会静默弹回，SSH 里 `getprop sys.usb.config` 含 adb 才算真开；openssh 装完 `sshd: no hostkeys available` → `ssh-keygen -A`
+- **低端 SoC（骁龙 6xx 及以下）**：gateway 冷启动到 listening 要 40–60 秒（Note 7 实测），验证 curl 多等一会；3GB RAM 机型（Note 4X）只做供应商节点/轻量任务
+- **多机 QQ 机器人机队**：每台设备注册**独立 AppID**（QQ 里是不同的聊天窗口）。"无响应"先分清用户发的是哪个 bot 的窗口再查对应设备日志——一台白名单 401 离线时另一台日志完全正常，极易误判（2026-07-18 实例）。同一宽带下所有设备出口 IPv4 相同，宽带重拨后**所有 bot 白名单要一起更新**；白名单加好后无需重启，插件每分钟自动重试，约 1 分钟自愈
+- **OpenClawX App 协议不匹配**：gateway 日志每 0.4s 刷 `protocol mismatch client=OpenClawX Node ... expected=4`（ua=Dart，来源 127.0.0.1）= 本机 OpenClawX App 太旧，升级或卸载即止；只费电刷日志，不影响渠道
 
 ---
 
@@ -563,7 +591,8 @@ openclaw cron rm <id>                  # 删除
 |------|------|
 | SSH 连不上 | PC 与手机同网络？IP 漂了？Tailscale 固定 IP 不受影响。电池策略无限制？ |
 | gateway 无响应 | `sv status` → fail/down？`tail -50` 服务日志 |
-| QQ 机器人不回话 | IP 白名单过期（蜂窝 IP 漂了）—— 查 `curl -4 -s https://api.ip.sb/ip` 更新 |
+| QQ 机器人不回话 | IP 白名单过期（出口 IP 漂了）—— 查 `curl -4 -s https://api.ip.sb/ip` 更新；改好后约 1 分钟自愈无需重启 |
+| QQ 不回话但本机日志正常 | 多机多 bot：用户发的可能是**另一台设备**的 bot 窗口 → 先对号（见方案评估·适配矩阵）再查 |
 | 飞书机器人不回话 | WebSocket 还连着？`grep feishu` 日志 |
 | 端口被占 | 改 `openclaw.json` → `gateway.port` 后重启 |
 | 配置改坏 | `~/.openclaw/` 下有自动备份 `openclaw.json.bak.*` |
@@ -655,3 +684,4 @@ rm -f ~/.termux/boot/start-services.sh
 | v1.9 | 2026-07-17 | 定时任务（每日基金分析）；拍照；部署技能 openclaw-android-deploy |
 | v1.10 | 2026-07-17 | 飞书接入；坑 15（230101 新企业免审）+ 坑 16（restart-loop breaker） |
 | **v2.0** | 2026-07-17 | **文档重构**：按功能模块重组为六大部分（基础/服务化/网络/应用/功能/运维），章节从 15 章精简为 18 章+3 附录 |
+| v2.1 | 2026-07-18 | 机型适配矩阵：4 台真机（K60/MIX 2S/Note 7/Note 4X，Android 7/10/15）+ 按版本加固决策树；多机多 bot 分诊与白名单联动经验；OpenClawX App 协议不匹配处置；型号修正（23013RK75C 实为 K60 非 Pro） |

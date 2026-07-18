@@ -1,6 +1,6 @@
-# 踩坑速查（14 坑全录）
+# 踩坑速查（16 坑全录）
 
-按报错现象查找。来源：2026-07 Redmi K60 Pro (HyperOS/Android 15) 实战部署。
+按报错现象查找。来源：2026-07 四台真机（K60 / MIX 2S / Note 7 / Note 4X）实战部署。
 
 | # | 现象 | 原因 | 解法 |
 |---|------|------|------|
@@ -18,6 +18,8 @@
 | 12 | Termux 里跑 tailscale 秒崩 `SIGSYS: bad system call` | Android seccomp 拦截 Go 二进制的 faccessat2 调用 | 放弃命令行版，装官方 Android App（走系统 VPN 接口） |
 | 13 | QQ 渠道 `invalid appid or secret`（100016） | AppSecret 复制到页面掩码值，或离开页面后失效 | 开放平台「重新生成」后立即完整复制 |
 | 14 | QQ 渠道 `接口访问源IP不在白名单`（401） | 平台强制 IPv4 白名单 + Node 走 IPv6 出口 + 蜂窝 IP 漂移 | 见下方详解 |
+| 15 | 飞书 `230101 Sending messages to users is temporarily unavailable` | 企业审核卡住 | 创建新企业免审（详见部署文档第十二章） |
+| 16 | 频繁 `sv down/up` 后服务不加载渠道 | restart-loop breaker 触发 | `openclaw doctor --fix` |
 
 ## 坑 14 详解：QQ IP 白名单
 
@@ -39,6 +41,9 @@ export NODE_OPTIONS="--dns-result-order=ipv4first"
 
 ## 其他经验
 
+- **多设备多 QQ bot 误诊**（2026-07-18）："QQ 无响应"先分清用户发消息的是哪个 bot 的窗口——机队每台设备挂独立 AppID，一台 401 离线时另一台日志完全正常，容易误判成"新部署的坏了"。对号入座方法见 device-matrix.md 机队经验
+- **gateway 日志刷 `protocol mismatch client=OpenClawX Node ... expected=4`**（ua=Dart，127.0.0.1 每 0.4s 一次）：本机装的 OpenClawX App 客户端协议版本旧于 gateway，升级或卸载该 App 即止；只费电刷日志，不影响渠道
+- **白名单修好后无需重启**：qqbot 插件每分钟自动重试 /gateway，白名单生效后约 1 分钟自动恢复（2026-07-18 实测：401 离线 2.5h → 加 IP → 62s 后 Gateway ready）
 - **GitHub 推不上去但 gh 命令正常**：某些网络下 github.com:443 被阻断而 api/uploads/ssh.github.com:443 可达。
   `~/.ssh/config` 加 `Host github.com → HostName ssh.github.com, Port 443`，remote 换 SSH 地址
 - **cmd 批处理写中文注释会炸**（GBK/UTF-8 编码问题）：.bat 文件保持纯 ASCII

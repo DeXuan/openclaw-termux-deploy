@@ -34,8 +34,14 @@ openclaw channels status --probe        # → QQ Bot default: ... connected
 | 日志报错 | 处理 |
 |---|---|
 | `invalid appid or secret`（100016） | Secret 错了 → 重新生成完整复制（坑 13） |
-| `接口访问源IP不在白名单`（401） | ① 白名单加当前 IPv4；② 确认 run 脚本有 `NODE_OPTIONS="--dns-result-order=ipv4first"`（防 Node 走 IPv6 出口）——phone_setup_service.sh 已内置 |
-| 突然掉线（曾经正常） | 九成是蜂窝 IPv4 漂移 → 查新 IP 更新白名单；长期方案见 pitfalls.md 坑 14 |
+| `接口访问源IP不在白名单`（401） | ① 白名单加当前 IPv4；② 确认 run 脚本有 `NODE_OPTIONS="--dns-result-order=ipv4first"`（防 Node 走 IPv6 出口）——phone_setup_service.sh 已内置。白名单加好后**无需重启**，插件每分钟自动重试，约 1 分钟自愈 |
+| 突然掉线（曾经正常） | 九成是出口 IPv4 变了（蜂窝漂移/换了网络/宽带重拨）→ 查新 IP 更新白名单；长期方案见 pitfalls.md 坑 14 |
+| 一台"无响应"但日志完全正常 | 多设备各挂独立 AppID 时，用户发消息的可能是**另一台设备的 bot 窗口** → 先对号（device-matrix.md 机队经验），再查对应设备日志 |
+
+## 多 bot 机队提示
+
+- 每台设备注册独立机器人（AppID 互不相同），QQ 里是不同的聊天窗口，排障先分清对象
+- 同一宽带下所有设备出口 IP 相同：宽带重拨后**所有 bot 的白名单要一起更新**
 
 ## 运维提示
 
