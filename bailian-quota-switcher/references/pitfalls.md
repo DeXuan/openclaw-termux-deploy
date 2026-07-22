@@ -127,6 +127,51 @@ sv up openclaw
 
 **解法**：必须用 `nohup ... &` 启动；加入 `~/.termux/boot/start-services.sh` 确保重启后自动拉起
 
+### 坑 17：Provider 名称不统一导致 "Unknown model"
+
+**现象**：`All models failed: Unknown model: alibaba-model-studio/qwen3.7-max`，但 models.json 里有该模型
+
+**原因**：不同部署批次用了不同 provider 名。有的设备用 `dashscope`，有的用 `alibaba-model-studio`。OpenClaw 的 config 引用 `alibaba-model-studio/xxx`，但 models.json 里是 `dashscope.xxx` → 找不到
+
+**解法**：
+```bash
+node -e '
+var m=JSON.parse(fs.readFileSync(process.env.HOME+"/.openclaw/agents/main/agent/models.json","utf8"));
+if(m.providers["dashscope"]){
+  m.providers["alibaba-model-studio"]=m.providers["dashscope"];
+  delete m.providers["dashscope"];
+  fs.writeFileSync(...,JSON.stringify(m,null,2));
+}
+'
+```
+
+### 坑 18：free_quota.json 缺失导致 watcher 崩溃
+
+**现象**：Watcher 日志报 `ENOENT: no such file or directory, open '...free_quota.json'`
+
+**原因**：旧版 watcher（v1）没有 try/catch 包裹 free_quota.json 读取，文件不存在时直接抛异常
+
+**解法**：
+- 升级到 watcher v2.2（有 try/catch + 启动自建文件）
+- 手动创建：`echo '{"models":{}}' > ~/.openclaw/free_quota.json`
+
+### 坑 19：旧 provider 残骸在 openclaw.json 中
+
+**现象**：Gateway 启动报 `models.providers.alibaba-model-studio: custom model providers must declare models`
+
+**原因**：openclaw.json 中有残缺的 provider 定义（只有 baseUrl 没有 models）。这通常是之前手动编辑留下的
+
+**解法**：
+```bash
+node -e '
+var c=JSON.parse(fs.readFileSync(process.env.HOME+"/.openclaw/openclaw.json","utf8"));
+["dashscope","alibaba-model-studio","qwen-portal"].forEach(function(id){
+  if(c.models&&c.models.providers) delete c.models.providers[id];
+});
+fs.writeFileSync(...,JSON.stringify(c,null,2));
+'
+```
+
 ### 坑 16：Watcher 冷却时间太短导致循环切换
 
 **现象**：模型 A 耗尽 → 切到 B → 立刻又切到 C（因为 B 的实际请求还没发出）

@@ -7,9 +7,9 @@ description: >
   关键词：百炼、阿里云、免费额度、403、自动切换、qwen、deepseek、kimi、glm、MiniMax、quota exhausted、bailian、dashscope
 ---
 
-# 百炼免费模型额度自动切换 v2.1
+# 百炼免费模型额度自动切换 v2.2
 
-> 完整文档见 [README.md](README.md) | 版本记录见 README §12
+> 完整文档见 [README.md](README.md) | 版本记录见 README §12 | 踩坑见 [references/pitfalls.md](references/pitfalls.md)
 
 基于 **两天四机（K60/MIX2S/Note7/Note4X）实战打磨**。每台安卓手机配一组百炼免费大语言模型（各 100 万 token 独立额度），watcher 守护进程监控日志中的 403 错误，自动 re-auth + 切换到下一个模型。
 

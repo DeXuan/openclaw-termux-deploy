@@ -13,18 +13,28 @@ COOLDOWN=30
 
 echo "[watcher] $(date +%H:%M:%S) started, pid=$$"
 
-# 启动自检：清理残留的 crash-loop breaker
+echo "[watcher] $(date +%H:%M:%S) started, pid=$$"
+
+# 启动自检
+# 1. 清理残留的 crash-loop breaker
 if ls "$STABILITY_DIR"/*.json 2>/dev/null | grep -q crash_loop_breaker; then
   echo "[watcher] clearing stale crash-loop breaker files"
   rm -f "$STABILITY_DIR"/*.json
 fi
 
-# 确认 key 文件存在
+# 2. 确保 free_quota.json 存在（缺失会导致旧版 watcher 崩溃）
+if [ ! -f "$HOME/.openclaw/free_quota.json" ]; then
+  echo "[watcher] creating free_quota.json"
+  mkdir -p "$HOME/.openclaw"
+  echo '{"models":{}}' > "$HOME/.openclaw/free_quota.json"
+fi
+
+# 3. 确认 key 文件存在
 if [ ! -f "$KEY_FILE" ]; then
   echo "[watcher] ERROR: $KEY_FILE not found! watcher cannot re-auth."
 fi
 
-# 确认 gateway 运行，否则等它起来
+# 4. 确认 gateway 运行，否则等它起来
 for i in $(seq 1 10); do
   if curl -4 -s --max-time 3 http://127.0.0.1:18789/ -o /dev/null; then
     echo "[watcher] gateway reachable"

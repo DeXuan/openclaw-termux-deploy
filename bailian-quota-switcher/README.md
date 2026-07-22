@@ -440,6 +440,15 @@ bailian-quota-switcher/
 
 ## 12. 版本更新记录
 
+### v2.2 (2026-07-23)
+
+- **新增**：watcher 启动自建 `free_quota.json`（缺失不再崩溃）
+- **新增**：deploy.sh 清理旧 provider 残骸（`dashscope`/`qwen-portal` 等）
+- **新增**：deploy.sh Step 4 创建 `free_quota.json`
+- **新增**：3 条踩坑（#17 Provider名不统一、#18 free_quota.json缺失、#19 旧provider残骸）
+- **修复**：多设备 provider 名称不统一问题（统一为 `alibaba-model-studio`）
+- **优化**：deploy.sh 步骤从 6 步扩展到 7 步，覆盖更全面
+
 ### v2.1 (2026-07-23)
 
 - **新增**：boot 自启配置说明（§8）
