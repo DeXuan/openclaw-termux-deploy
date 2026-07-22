@@ -132,7 +132,11 @@ ENDSSH
     "pkill -f quota_watcher 2>/dev/null; nohup bash \$HOME/quota_watcher.sh > \$HOME/watcher.log 2>&1 &" 2>/dev/null
   echo "  watcher: deployed"
 
-  # Step 5: 验证
+  # Step 5: Configure boot auto-start (if boot script exists)
+  ssh -o ConnectTimeout=10 -p "$PORT" "$USER@$HOST" \
+    "if [ -f ~/.termux/boot/start-services.sh ]; then grep -q quota_watcher ~/.termux/boot/start-services.sh 2>/dev/null || { echo '' >> ~/.termux/boot/start-services.sh; echo '# 百炼免费额度自动切换守护' >> ~/.termux/boot/start-services.sh; echo 'nohup bash ~/quota_watcher.sh > ~/watcher.log 2>&1 &' >> ~/.termux/boot/start-services.sh; echo '  boot: configured'; }; else echo '  boot: Termux:Boot not installed, skipping'; fi" 2>/dev/null
+
+  # Step 6: 验证
   sleep 8
   HTTP=$(ssh -o ConnectTimeout=10 -p "$PORT" "$USER@$HOST" \
     "curl -4 -s --max-time 5 http://127.0.0.1:18789/ -o /dev/null -w '%{http_code}'" 2>/dev/null)
