@@ -21,7 +21,8 @@ show_menu() {
   menu_item "5" "⚙️"  "服务管理"        "启停/重启/日志查看"
   menu_item "6" "🩺" "自愈系统"        "安装/配置/状态/日志"
   menu_item "7" "🧩" "技能工具箱"      "安装/搜索/同步技能"
-  menu_item "8" "🤖" "模型与渠道"      "模型管理/渠道状态/额度"
+  menu_item "8" "🤖" "模型管理"        "模型列表/渠道状态/免费额度"
+  menu_item "9" "📡" "渠道部署"        "安装/配置 QQ/飞书/微信机器人"
   echo
   menu_item "u" "🔄" "系统更新"        "升级 OpenClaw / Node.js"
   menu_item "h" "📖" "帮助与速查"      "运维命令/文档链接"
@@ -39,7 +40,8 @@ show_menu() {
     5) service_menu ;;
     6) selfheal_menu ;;
     7) require_openclaw && skills_menu || { press_enter; show_menu; } ;;
-    8) require_openclaw && models_menu  || { press_enter; show_menu; } ;;
+    8) require_openclaw && models_menu    || { press_enter; show_menu; } ;;
+    9) require_openclaw && channels_menu  || { press_enter; show_menu; } ;;
     u|U) update_menu ;;
     h|H) help_menu ;;
     0) echo -e "\n  ${C_DIM}再见 👋${C_RESET}\n"; exit 0 ;;
@@ -501,14 +503,15 @@ skills_menu() {
   press_enter; show_menu
 }
 
-# ═══ 8. Models & Channels ═══
+# ═══ 8. Models ═══
 models_menu() {
   clear
   header
-  echo -e "  ${C_BOLD}${C_WHITE}🤖 模型与渠道${C_RESET}\n"
+  echo -e "  ${C_BOLD}${C_WHITE}🤖 模型管理${C_RESET}\n"
   menu_item "1" "🧠" "模型列表"        "查看当前可用模型"
   menu_item "2" "📡" "渠道状态"        "QQ/飞书/微信连接状态"
   menu_item "3" "💰" "免费额度"        "百炼模型免费额度查询"
+  menu_item "4" "🔄" "额度自动切换"      "部署 quota_watcher 守护进程"
   echo -e "  ${C_BOLD}[0]${C_RESET} 返回"
   echo
   read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" choice
@@ -517,8 +520,35 @@ models_menu() {
     1) openclaw models list 2>/dev/null | head -30 || log_fail "不可用" ;;
     2) openclaw channels status --probe 2>/dev/null || log_warn "probe 超时是正常的，可 grep 日志查看" ;;
     3) bl usage freetier --all 2>/dev/null || log_fail "bailian CLI 未安装或未认证。安装: npm install -g bailian" ;;
+    4) deploy_quota_watcher ;;
   esac
   press_enter; show_menu
+}
+
+deploy_quota_watcher() {
+  clear; header
+  echo -e "  ${C_BOLD}${C_WHITE}🔄 额度自动切换${C_RESET}\n"
+  local qdir="$SCRIPT_DIR/bailian-quota-switcher/scripts"
+  show_step 1 2 "部署 quota_watcher…"
+  if [ -f "$qdir/quota_watcher.sh" ]; then
+    cp "$qdir/quota_watcher.sh" ~/quota_watcher.sh 2>/dev/null
+    cp "$qdir/quota_manager.sh" ~/quota_manager.sh 2>/dev/null
+    chmod +x ~/quota_watcher.sh ~/quota_manager.sh 2>/dev/null
+    log_ok "脚本已部署"
+  else
+    log_fail "找不到 quota_watcher.sh（bailian-quota-switcher/scripts/）"
+    return
+  fi
+  show_step 2 2 "启动守护进程…"
+  if ps aux | grep -q "[q]uota_watcher"; then
+    log_ok "quota_watcher 已在运行"
+  else
+    nohup bash ~/quota_watcher.sh > ~/quota_watcher.log 2>&1 &
+    sleep 1
+    ps aux | grep -q "[q]uota_watcher" && log_ok "已启动" || log_fail "启动失败"
+  fi
+  log_info "日志: ~/quota_watcher.log | 停止: pkill -f quota_watcher"
+  log_info "开机自启: 加入 ~/.termux/boot/start-services.sh"
 }
 
 # ═══ Update ═══
@@ -588,4 +618,130 @@ skill/references/             技能参考手册
 https://github.com/DeXuan/    GitHub 仓库" 50
 
   press_enter; show_menu
+}
+
+# ═══ 9. Channel Deployment ═══
+channels_menu() {
+  clear
+  header
+  echo -e "  ${C_BOLD}${C_WHITE}📡 渠道部署${C_RESET}\n"
+
+  echo -e "  ${C_DIM}当前渠道状态:${C_RESET}"
+  local qq_status fsf_status wx_status
+  qq_status=$(node -e "try{const c=require(process.env.HOME+'/.openclaw/openclaw.json');console.log(c.channels?.qqbot?.enabled?'✅':'❌')}catch(e){console.log('?')}" 2>/dev/null) || qq_status="?"
+  fsf_status=$(node -e "try{const c=require(process.env.HOME+'/.openclaw/openclaw.json');console.log(c.channels?.feishu?.enabled?'✅':'❌')}catch(e){console.log('?')}" 2>/dev/null) || fsf_status="?"
+  wx_status=$(node -e "try{const c=require(process.env.HOME+'/.openclaw/openclaw.json');console.log(c.channels?.['openclaw-weixin']?.enabled?'✅':'❌')}catch(e){console.log('?')}" 2>/dev/null) || wx_status="?"
+  echo -e "  QQ: ${qq_status}    飞书: ${fsf_status}    微信: ${wx_status}"
+  echo
+
+  menu_item "1" "🐧" "QQ 机器人"       "安装插件 + 配置 AppID/Secret + IP 白名单"
+  menu_item "2" "🕊️" "飞书机器人"      "安装插件 + 配置 AppID/Secret (无 IP 白名单)"
+  menu_item "3" "💬" "微信 iLink"      "安装 + 扫码绑定 (仅 K60 推荐)"
+  menu_item "4" "📋" "查看渠道日志"    "grep 最近 20 行渠道相关日志"
+  echo -e "  ${C_BOLD}[0]${C_RESET} 返回"
+  echo
+  read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" choice
+
+  case "$choice" in
+    1) deploy_qqbot ;;
+    2) deploy_feishu ;;
+    3) deploy_weixin ;;
+    4)
+      log_step "最近渠道日志:"
+      tail -20 "$PREFIX/var/log/sv/openclaw/current" 2>/dev/null | grep -iE "qqbot|feishu|weixin" || echo "  (无渠道相关日志)"
+      ;;
+  esac
+  press_enter; show_menu
+}
+
+deploy_qqbot() {
+  clear; header
+  echo -e "  ${C_BOLD}${C_WHITE}🐧 QQ 机器人部署${C_RESET}\n"
+  show_step 1 3 "安装 QQ 插件…"
+  if openclaw plugins list 2>/dev/null | grep -q qqbot; then
+    log_ok "QQ 插件已安装"
+  else
+    spinner_start "安装 @openclaw/qqbot..."
+    openclaw plugins install @openclaw/qqbot 2>&1 | tail -3
+    spinner_stop; log_ok "插件已安装"
+  fi
+  show_step 2 3 "配置 AppID/AppSecret…"
+  echo
+  echo -e "  ${C_DIM}📱 https://q.qq.com → 注册 → 开发设置 → AppID + AppSecret${C_RESET}"
+  echo -e "  ${C_DIM}   沙箱配置 → 加自己 QQ 号为测试用户${C_RESET}"
+  echo -e "  ${C_DIM}   IP 白名单 → 加: $(curl -4 -s --connect-timeout 5 https://api.ip.sb/ip 2>/dev/null || echo '查失败')${C_RESET}"
+  echo
+  read -r -p "$(echo -e "  ${C_BOLD}AppID:AppSecret${C_RESET} ${C_DIM}(如 123456:abcdef)${C_RESET}: ")" qq_token
+  if [ -n "$qq_token" ]; then
+    openclaw channels add --channel qqbot --token "$qq_token" 2>&1 | tail -3
+    log_ok "QQ 渠道已添加"
+  else
+    log_warn "跳过（可稍后手动配置）"
+  fi
+  show_step 3 3 "重启生效…"
+  export SVDIR="$PREFIX/var/service"; sv restart openclaw 2>/dev/null
+  log_ok "已重启 — 白名单加好约 1 分钟自愈"
+}
+
+deploy_feishu() {
+  clear; header
+  echo -e "  ${C_BOLD}${C_WHITE}🕊️ 飞书机器人部署${C_RESET}\n"
+  show_step 1 2 "安装飞书插件…"
+  if openclaw plugins list 2>/dev/null | grep -q feishu; then
+    log_ok "飞书插件已安装"
+  else
+    spinner_start "安装 @openclaw/feishu..."
+    openclaw plugins install @openclaw/feishu 2>&1 | tail -3
+    spinner_stop; log_ok "插件已安装"
+  fi
+  show_step 2 2 "配置 AppID/AppSecret…"
+  echo
+  echo -e "  ${C_DIM}📱 飞书开放平台 → 企业自建应用 → 机器人 → WebSocket 长连接${C_RESET}"
+  echo -e "  ${C_DIM}   无 IP 白名单限制，全队最省心${C_RESET}"
+  echo
+  read -r -p "$(echo -e "  ${C_BOLD}AppID:AppSecret${C_RESET} ${C_DIM}(如 cli_xxx:yyy)${C_RESET}: ")" fs_token
+  if [ -n "$fs_token" ]; then
+    openclaw channels add --channel feishu --token "$fs_token" 2>&1 | tail -3
+    log_ok "飞书渠道已添加"
+  else
+    log_warn "跳过"
+  fi
+  export SVDIR="$PREFIX/var/service"; sv restart openclaw 2>/dev/null
+  log_ok "已重启"
+}
+
+deploy_weixin() {
+  clear; header
+  echo -e "  ${C_BOLD}${C_WHITE}💬 微信 iLink 部署${C_RESET}\n"
+  show_step 1 3 "检查依赖…"
+  command -v which &>/dev/null || { log_step "安装 which…"; pkg install -y which 2>&1 | tail -1; }
+  log_ok "which ✓"
+  show_step 2 3 "安装微信插件…"
+  if openclaw plugins list 2>/dev/null | grep -q openclaw-weixin; then
+    log_ok "微信插件已安装"
+  else
+    log_step "安装中 (1-2 分钟)…"
+    export GYP_DEFINES="android_ndk_path="
+    npx -y @tencent-weixin/openclaw-weixin-cli@latest install 2>&1 | tail -5
+    log_ok "安装完成"
+  fi
+  show_step 3 3 "扫码绑定…"
+  echo
+  echo -e "  ${C_BOLD}[1]${C_RESET} 本机扫码  ${C_BOLD}[2]${C_RESET} 远程链接  ${C_BOLD}[0]${C_RESET} 跳过"
+  read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" wx_mode
+  case "$wx_mode" in
+    1) openclaw channels login --channel openclaw-weixin 2>&1 ;;
+    2)
+      nohup openclaw channels login --channel openclaw-weixin > ~/wx-login.log 2>&1 &
+      sleep 10
+      local link=$(grep -o "https://liteapp.weixin.qq.com[^[:space:]]*" ~/wx-login.log 2>/dev/null | tail -1)
+      if [ -n "$link" ]; then
+        echo -e "\n  ${C_GREEN}🔗${C_RESET} ${C_CYAN}${link}${C_RESET}"
+        echo -e "  ${C_DIM}复制到微信打开，1-2 分钟过期${C_RESET}"
+      else
+        log_warn "登录进程启动中，稍后: grep -o 'https://liteapp.weixin.qq.com[^[:space:]]*' ~/wx-login.log"
+      fi
+      ;;
+  esac
+  log_info "绑定成功后 sv restart openclaw"
 }
