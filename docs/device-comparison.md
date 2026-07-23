@@ -17,8 +17,8 @@
 
 ```
 网络: 家庭宽带(出口 117.186.4.220) + Tailscale 组网
-K60 ↔ Note 7  SSH 互信 ✅  crond 自愈监控 ✅  IP 漂移告警 ✅
-四台全在线  ·  MIX 2S / Note 4X 待部署 crond  ClawChat 全队废弃
+TS 组网: K60 · Note 7 · MIX 2S  |  Note 4X 仅 LAN (A7不支持)
+4 机 SSH 全互信 ✅  crond 全队覆盖 ✅  IP 漂移告警 ✅
 ```
 
 ---
@@ -242,9 +242,10 @@ Python 3.14.6 | git 2.55.0 | 缺: cronie, termux-api
 
 | 路径 | 地址 | 说明 |
 |---|---|---|
-| WiFi | 192.168.1.20 | LAN 直连 |
-| Tailscale | ❌ 未检测到 | 之前记录 100.104.72.125，需重装 |
-| MAC | ⚠️ 随机 MAC | AE:1A:3A:F6:F9:0C，路由器需重绑 |
+| Tailscale | 100.104.72.125 | ✅ 首选通道 (APK 重装) |
+| WiFi | 192.168.1.20 | LAN 回退 |
+| MAC | ⚠️ 随机 MAC | AE:1A:3A:F6:F9:0C |
+| SSH 互信 | ↔ K60 / Note 7 / Note 4X | ✅ |
 
 ### 渠道 & 模型
 
@@ -256,24 +257,24 @@ Python 3.14.6 | git 2.55.0 | 缺: cronie, termux-api
 | 模型供应商 | ⚠️ 未明确配置（providers 为空） |
 | plugins.allow | qqbot, deepseek, feishu, openclaw-weixin |
 
-### 🔴 待处理
+### 已完成
 
-- **模型供应商未配置**：需 `openclaw onboard` 配置 DeepSeek API Key
-- **无 crond 监控**：`pkg install cronie` + 部署 healthcheck + self-check
-- **Tailscale 缺失**：之前有 TS IP 现在未检测到，需重装
-- **0 技能**：workspace 和 .agents 均为空，需从 K60 rsync
-- **wlan0 无 IP**：当前通过其他接口通信，需排查
-- **微信 iLink**：已装未绑，如需用则扫码绑定，否则移除以精简
+- ✅ 59 技能已从 K60 同步
+- ✅ crond + healthcheck + self-check 已部署
+- ✅ Tailscale 已重装 (100.104.72.125)
+- ✅ 微信 iLink 已移除 (plugins.allow → qqbot, deepseek, feishu)
+- ✅ 默认模型 alibaba-model-studio/deepseek-v4-flash
 
 ### 诊断
 
 | 🟢 优势 | 🟡 待优化 |
 |---|---|
-| A10 天然免疫 phantom killer | 模型配置缺失 |
-| 加固最简单（仅 Doze） | cronie + 自愈未部署 |
-| 845 性能稳定，load 仅 0.05 | Tailscale 失联 |
-| 双渠道 QQ+飞书在线 | 0 技能待同步 |
-| 磁盘 17% 余量大 | 微信未绑待决策 |
+| A10 天然免疫 phantom/权限撤销 | wlan0 无 IP (走 TS 不受影响) |
+| 加固最简单（仅 Doze） | 随机 MAC 需路由器绑定 |
+| 845 性能稳定，load 仅 0.05 | — |
+| TS+LAN 双路径冗余 | — |
+| 双渠道 QQ+飞书 + 59 技能 | — |
+| 磁盘 17% 余量大 | — |
 
 ---
 
