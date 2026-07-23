@@ -104,19 +104,22 @@ export NODE_OPTIONS="--dns-result-order=ipv4first --max-old-space-size=4096 --ma
 
 > ⚠️ `--initial-old-space-size` 被 Node 安全策略拦截，已移除。
 
-### 定时监控 (2026-07-23 部署)
+### 监控与自愈 (2026-07-23 部署)
 
 ```bash
 # crontab
-*/5  * * * * ~/healthcheck.sh   # SSH 检查 Note 7 gateway
-*/10 * * * * ~/check-ip.sh      # 检测出口 IP 变化
+*/5  * * * * ~/healthcheck.sh   # SSH 检查 Note 7 gateway → 自愈 → 告警
+*/10 * * * * ~/check-ip.sh      # 检测出口 IP 变化 → 告警
+*/10 * * * * ~/self-check.sh    # 本地内存/磁盘/swap 阈值保护
 ```
 
-**健康检查** (`~/healthcheck.sh`)：SSH 到 Note 7 探活 gateway，异常时通过 K60 的 QQ bot 推送告警。
+| 脚本 | 职责 | 自愈能力 |
+|---|---|---|
+| `healthcheck.sh` | SSH 探活 Note 7 gateway | ✅ 异常时远程 `sv restart`（最多 2 次），10 分钟冷却期 |
+| `check-ip.sh` | 出口 IP 漂移检测 | 仅告警（需人工更新 QQ 白名单） |
+| `self-check.sh` | 磁盘 > 90% / 内存 < 500MB / swap > 80% | ✅ 自动清理日志/npm cache；内存不足时重启 gateway |
 
-**IP 漂移检测** (`~/check-ip.sh`)：对比当前出口 IP 与上次记录，变化时通过 QQ bot 推送新 IP + 白名单更新提醒。
-
-正常时静默，不产生消息、不消耗 token。
+> 正常时静默，不产生消息、不消耗 token。详见[自愈系统](#自愈系统)。
 
 ### 诊断
 
@@ -176,12 +179,20 @@ Python 3.14.6 (3 包) | git 2.55.0 | cronie | 缺: termux-api, vim/nano
 | 微信 iLink | 🗑️ 已移除 |
 | plugins.allow | feishu, qqbot, deepseek（全队最简） |
 
-### 定时监控
+### 监控与自愈
 
 ```bash
-# crontab: 每 5 分钟 SSH 检查 K60 gateway，异常时通过 Note 7 QQ bot 告警
-*/5 * * * * ~/healthcheck.sh
+# crontab
+*/5  * * * * ~/healthcheck.sh   # SSH 检查 K60 gateway → 自愈 → 告警
+*/10 * * * * ~/self-check.sh    # 本地内存/磁盘/swap 阈值保护
 ```
+
+| 脚本 | 职责 | 自愈能力 |
+|---|---|---|
+| `healthcheck.sh` | SSH 探活 K60 gateway | ✅ 异常时远程 `sv restart`（最多 2 次），10 分钟冷却期 |
+| `self-check.sh` | 磁盘 > 90% / 内存 < 300MB / swap > 80% | ✅ 自动清理；内存不足时重启 gateway |
+
+> 正常时静默。详见[自愈系统](#自愈系统)。
 
 ### 🔴 禁止并发 CLI
 
@@ -200,10 +211,6 @@ Python 3.14.6 (3 包) | git 2.55.0 | cronie | 缺: termux-api, vim/nano
 | A10 天然免疫 phantom killer | 日志轮转 (7.3MB) |
 | 全链路自动恢复验证通过 | Node 26.4.0 升级风险 |
 | SSH 互信 + crond 监控 ✅ | — |
-
-# 版本管理: Git 仓库 (推荐)
-cd ~/.openclaw/workspace/skills && git init && git push  # 其他设备 git pull
-```
 
 ## MIX 2S — 待重新定位
 
@@ -243,31 +250,66 @@ ssh -p 8022 u0_a171@100.91.94.44     # K60 → Note 7 ✅
 ssh -p 8022 u0_a129@100.118.60.29    # Note 7 → K60 ✅
 ```
 
-## 双机健康监控 (2026-07-23 部署)
+## 自愈系统
 
-| 监控方 | 目标 | 频率 | 告警方式 |
+> 部署时间：2026-07-23 | 设计原则：**检测 → 修复 → 修复无效才告警**
+>
+> 脚本位置：`scripts/` → `k60-healthcheck.sh` / `note7-healthcheck.sh` / `self-check.sh`
+
+### 架构
+
+```
+Layer 1  进程守护    runit (15s 自动拉起 gateway)
+Layer 2  异常感知    互检探活 + IP 漂移 + 本地自检
+Layer 3  自动修复    ★ SSH 远程重启 + 重试 + 冷却机制
+Layer 4  预防保护    ★ 内存/磁盘/swap 阈值自动清理
+Layer 5  交叉容灾    远期（待 OpenClaw nodes 配通）
+```
+
+### 互检自愈流程
+
+```
+检测 HTTP 200？
+  ├─ 是 → 静默退出
+  └─ 否
+      ├─ SSH 不通？ → 对方可能关机，立即告警
+      ├─ 10 分钟内重启过？ → 冷却期，跳过
+      └─ 自愈循环（最多 2 次）
+           ├─ ssh 远程 sv restart openclaw
+           ├─ 等 20s 重新探活
+           ├─ HTTP 200 恢复 → 记录日志，静默退出
+           └─ 2 次后仍失败 → QQ 告警「自愈失败，需人工介入」
+```
+
+### 本地自检
+
+每 10 分钟执行，各设备独立运行：
+
+| 检测项 | 阈值 | 动作 | 是否告警 |
 |---|---|---|---|
-| K60 | Note 7 gateway | 每 5 分钟 | K60 QQ bot (102825839) |
-| Note 7 | K60 gateway | 每 5 分钟 | Note 7 QQ bot (1905221791) |
-| K60 | 出口 IP 变化 | 每 10 分钟 | K60 QQ bot |
+| 磁盘使用率 | > 90% | 截断大日志 + 清理 3 天前旧日志 + npm cache clean | 否 |
+| 可用内存 | < 500MB | 截断日志 + sync + drop_caches → 仍不足则重启 gateway | 否 |
+| Swap 使用率 | > 80% | 无法主动释放（Android 限制），发告警提醒关注 | ✅ QQ |
+| Gateway 自检 | HTTP ≠ 200 | 只记录，由对端 healthcheck 处理（避免重复操作） | 否 |
 
-**原理：**
+### Cron 调度
 
+| 设备 | 脚本 | 频率 | 职责 |
+|---|---|---|---|
+| K60 | `~/healthcheck.sh` | */5 min | 监控 Note 7 → 自动重启 → 告警 |
+| K60 | `~/check-ip.sh` | */10 min | 出口 IP 漂移检测 → 告警 |
+| K60 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
+| Note 7 | `~/healthcheck.sh` | */5 min | 监控 K60 → 自动重启 → 告警 |
+| Note 7 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
+
+### 日志
+
+```bash
+cat ~/healthcheck.log        # 互检自愈日志（重启/告警）
+cat ~/self-check.log         # 本地自检日志（清理动作）
+cat ~/self-check.alert.log   # 本地自检告警（swap 超阈值）
+cat ~/healthcheck.last_restart  # 上次自愈重启时间戳
 ```
-K60 crond → SSH Note7 → curl 127.0.0.1:18789 → 200=正常 非200=QQ告警
-Note7 crond → SSH K60 → curl 127.0.0.1:18789 → 200=正常 非200=QQ告警
-K60 crond → curl ip.sb → 对比上次IP → 变化=QQ告警(含白名单更新提醒)
-```
-
-**正常时静默，不作任何操作，不消耗 token。** 仅在异常时触发 `openclaw agent` 推送 QQ 消息。
-
-**部署文件：**
-
-| 文件 | 位置 | 说明 |
-|---|---|---|
-| `~/healthcheck.sh` | K60, Note 7 | 健康检查脚本 |
-| `~/check-ip.sh` | K60 | IP 漂移检测 |
-| crontab | K60: `*/5 + */10` · Note 7: `*/5` | 定时触发 |
 
 ## 技能同步
 
@@ -303,9 +345,9 @@ cd ~/.openclaw/workspace/skills && git init && git push
 
 ## 🟢 第一层：立即可做
 
-### ✅ 双机健康监控（已部署）
+### ✅ 双机自愈监控（已部署）
 
-K60 ↔ Note 7 双向 SSH 巡检 + QQ 告警。
+K60 ↔ Note 7 双向 SSH 巡检 + 自动重启 + QQ 告警。本地内存/磁盘阈值保护。
 
 ### ✅ IP 漂移自动告警（已部署）
 
@@ -347,7 +389,7 @@ cd ~/.openclaw/workspace/out && python -m http.server 8080
 
 K60: llama.cpp + Qwen2.5-7B · Note7: 0.5B-1.5B 分类摘要。
 
-### API 网关 / 消息管道 / sshfs / 四机联邦 / 自愈系统 / nodes 集成 / 边缘 AI
+### API 网关 / 消息管道 / sshfs / 四机联邦 / nodes 集成 / 边缘 AI
 
 （详见此前版本路线图）
 
@@ -355,7 +397,7 @@ K60: llama.cpp + Qwen2.5-7B · Note7: 0.5B-1.5B 分类摘要。
 
 | 场景 | 难度 | 价值 | 状态 |
 |---|---|---|---|
-| 双机健康监控+告警 | ⭐ | 🔴 高 | ✅ 已部署 |
+| 双机自愈监控 | ⭐ | 🔴 高 | ✅ 已部署 |
 | IP 漂移自动检测 | ⭐ | 🔴 高 | ✅ 已部署 |
 | 免费额度保护 | ⭐⭐ | 🔴 高 | ⬜ 待认证 |
 | K60 配置清理 | ⭐ | 🟡 中 | ⬜ |
@@ -365,7 +407,7 @@ K60: llama.cpp + Qwen2.5-7B · Note7: 0.5B-1.5B 分类摘要。
 | 飞书告警中枢 | ⭐⭐ | 🔴 高 | ⬜ |
 | 本地小模型推理 | ⭐⭐⭐ | 🟡 中 | ⬜ |
 | 四机联邦 | ⭐⭐⭐⭐ | 🔴 高 | ⬜ |
-| 自愈系统 | ⭐⭐⭐ | 🔴 高 | ⬜ |
+| 自愈系统 | ⭐⭐⭐ | 🔴 高 | ✅ 已部署 |
 | 边缘 AI 集群 | ⭐⭐⭐⭐ | 🔴 高 | ⬜ |
 
 ---
@@ -388,7 +430,7 @@ K60: llama.cpp + Qwen2.5-7B · Note7: 0.5B-1.5B 分类摘要。
 
 ---
 
-## 十一、K60 技能清单
+## B. K60 技能清单
 
 > 统计时间：2026-07-23 | 总计 106 个技能，63 个就绪，11 个待配置，32 个已禁用
 >
@@ -528,90 +570,3 @@ openclaw skills install <slug>
 ```
 
 > **注意：** Note 7（SD660）安装大量技能后首次加载会慢（40-60s 冷启动），建议只安装常用技能。Note 4X（3GB RAM）禁止同时安装超过 10 个 workspace 技能以免 OOM。
-
----
-
-## 十二、自愈系统
-
-> 部署时间：2026-07-23 | 设计原则：**检测 → 修复 → 修复无效才告警**
-
-### 12.1 架构分层
-
-```
-Layer 1  进程守护    runit (15s 自动拉起 gateway)
-Layer 2  异常感知    互检探活 + IP 漂移 + 本地自检
-Layer 3  自动修复    ★ 新增：远程重启 + 重试 + 冷却机制
-Layer 4  预防保护    ★ 新增：内存/磁盘/swap 阈值自动清理
-Layer 5  交叉容灾    远期（待 OpenClaw nodes 配通）
-```
-
-### 12.2 互检自愈（K60 ↔ Note 7）
-
-每 5 分钟执行，通过 SSH 互信远程检查对方 gateway HTTP 状态：
-
-```
-检测 HTTP 200？
-  ├─ 是 → 静默退出
-  └─ 否
-      ├─ SSH 不通？ → 对方可能关机，立即告警
-      ├─ 10 分钟内重启过？ → 冷却期，跳过
-      └─ 自愈循环（最多 2 次）
-           ├─ ssh 远程 sv restart openclaw
-           ├─ 等 20s 重新探活
-           ├─ HTTP 200 恢复 → 记录日志，静默退出
-           └─ 2 次后仍失败 → QQ 告警「自愈失败，需人工介入」
-```
-
-**关键设计：**
-- **冷却期 10 分钟**：防止 gateway 反复崩溃时频繁重启
-- **SSH 不可达即告警**：设备离线无法自愈，不浪费时间重试
-- **只报警不静默**：自愈失败会带诊断信息（当前 HTTP 状态码）
-
-### 12.3 本地自检（各设备独立）
-
-每 10 分钟执行，不依赖网络：
-
-| 检测项 | 阈值 | 动作 | 是否告警 |
-|---|---|---|---|
-| 磁盘使用率 | > 90% | 截断大日志 + 清理 3 天前旧日志 + npm cache clean | 否（记日志） |
-| 可用内存 | < 500MB | 截断日志 + sync + drop_caches → 仍不足则重启 gateway | 否（记日志） |
-| Swap 使用率 | > 80% | 无法主动释放，发告警提醒关注 | ✅ QQ 告警 |
-| Gateway 自检 | HTTP ≠ 200 | 只记录，由对端 healthcheck 处理（避免重复操作） | 否 |
-
-**为什么 swap 只告警不修复：** Android 内核不支持主动释放 swap，只能等系统自然回收或重启 gateway。
-
-### 12.4 Cron 调度一览
-
-| 设备 | 脚本 | 频率 | 职责 |
-|---|---|---|---|
-| K60 | `~/healthcheck.sh` | */5 min | 监控 Note 7 → 自动重启 → 告警 |
-| K60 | `~/check-ip.sh` | */10 min | 出口 IP 漂移检测 → 告警 |
-| K60 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
-| Note 7 | `~/healthcheck.sh` | */5 min | 监控 K60 → 自动重启 → 告警 |
-| Note 7 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
-
-### 12.5 脚本位置
-
-```
-GitHub: openclaw-termux-deploy/scripts/
-├── k60-healthcheck.sh      # K60 自愈互检脚本
-├── note7-healthcheck.sh    # Note 7 自愈互检脚本
-├── self-check.sh           # 通用本地自检脚本（两台同版）
-└── check-ip.sh             # IP 漂移检测（K60 专属）
-```
-
-### 12.6 日志与排查
-
-```bash
-# 查看自愈操作记录
-cat ~/healthcheck.log        # 互检自愈日志（重启/告警）
-cat ~/self-check.log         # 本地自检日志（清理动作）
-cat ~/self-check.alert.log   # 本地自检告警（swap 超阈值等）
-cat ~/check-ip.log           # IP 漂移记录
-
-# 查看上次自愈重启时间
-cat ~/healthcheck.last_restart
-
-# 手动触发一次互检（不会无故重启——只有 gateway 挂了才会）
-~/healthcheck.sh; echo "exit: $?"
-```
