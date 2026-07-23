@@ -12,7 +12,8 @@
 ---
 
 ## 🧰 快速开始：部署工具箱
-
+https://github.com/DeXuan/openclaw-termux-deploy/blob/worktree-doc-restructure/GUIDE.md
+# OpenClaw Deploy — 工具箱使用指南
 ```bash
 git clone https://github.com/DeXuan/openclaw-termux-deploy.git
 cd openclaw-termux-deploy
