@@ -355,3 +355,90 @@ openclaw skills install <slug>
 ```
 
 > **注意：** Note 7（SD660）安装大量技能后首次加载会慢（40-60s 冷启动），建议只安装常用技能。Note 4X（3GB RAM）禁止同时安装超过 10 个 workspace 技能以免 OOM。
+
+---
+
+## 十二、自愈系统
+
+> 部署时间：2026-07-23 | 设计原则：**检测 → 修复 → 修复无效才告警**
+
+### 12.1 架构分层
+
+```
+Layer 1  进程守护    runit (15s 自动拉起 gateway)
+Layer 2  异常感知    互检探活 + IP 漂移 + 本地自检
+Layer 3  自动修复    ★ 新增：远程重启 + 重试 + 冷却机制
+Layer 4  预防保护    ★ 新增：内存/磁盘/swap 阈值自动清理
+Layer 5  交叉容灾    远期（待 OpenClaw nodes 配通）
+```
+
+### 12.2 互检自愈（K60 ↔ Note 7）
+
+每 5 分钟执行，通过 SSH 互信远程检查对方 gateway HTTP 状态：
+
+```
+检测 HTTP 200？
+  ├─ 是 → 静默退出
+  └─ 否
+      ├─ SSH 不通？ → 对方可能关机，立即告警
+      ├─ 10 分钟内重启过？ → 冷却期，跳过
+      └─ 自愈循环（最多 2 次）
+           ├─ ssh 远程 sv restart openclaw
+           ├─ 等 20s 重新探活
+           ├─ HTTP 200 恢复 → 记录日志，静默退出
+           └─ 2 次后仍失败 → QQ 告警「自愈失败，需人工介入」
+```
+
+**关键设计：**
+- **冷却期 10 分钟**：防止 gateway 反复崩溃时频繁重启
+- **SSH 不可达即告警**：设备离线无法自愈，不浪费时间重试
+- **只报警不静默**：自愈失败会带诊断信息（当前 HTTP 状态码）
+
+### 12.3 本地自检（各设备独立）
+
+每 10 分钟执行，不依赖网络：
+
+| 检测项 | 阈值 | 动作 | 是否告警 |
+|---|---|---|---|
+| 磁盘使用率 | > 90% | 截断大日志 + 清理 3 天前旧日志 + npm cache clean | 否（记日志） |
+| 可用内存 | < 500MB | 截断日志 + sync + drop_caches → 仍不足则重启 gateway | 否（记日志） |
+| Swap 使用率 | > 80% | 无法主动释放，发告警提醒关注 | ✅ QQ 告警 |
+| Gateway 自检 | HTTP ≠ 200 | 只记录，由对端 healthcheck 处理（避免重复操作） | 否 |
+
+**为什么 swap 只告警不修复：** Android 内核不支持主动释放 swap，只能等系统自然回收或重启 gateway。
+
+### 12.4 Cron 调度一览
+
+| 设备 | 脚本 | 频率 | 职责 |
+|---|---|---|---|
+| K60 | `~/healthcheck.sh` | */5 min | 监控 Note 7 → 自动重启 → 告警 |
+| K60 | `~/check-ip.sh` | */10 min | 出口 IP 漂移检测 → 告警 |
+| K60 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
+| Note 7 | `~/healthcheck.sh` | */5 min | 监控 K60 → 自动重启 → 告警 |
+| Note 7 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
+
+### 12.5 脚本位置
+
+```
+GitHub: openclaw-termux-deploy/scripts/
+├── k60-healthcheck.sh      # K60 自愈互检脚本
+├── note7-healthcheck.sh    # Note 7 自愈互检脚本
+├── self-check.sh           # 通用本地自检脚本（两台同版）
+└── check-ip.sh             # IP 漂移检测（K60 专属）
+```
+
+### 12.6 日志与排查
+
+```bash
+# 查看自愈操作记录
+cat ~/healthcheck.log        # 互检自愈日志（重启/告警）
+cat ~/self-check.log         # 本地自检日志（清理动作）
+cat ~/self-check.alert.log   # 本地自检告警（swap 超阈值等）
+cat ~/check-ip.log           # IP 漂移记录
+
+# 查看上次自愈重启时间
+cat ~/healthcheck.last_restart
+
+# 手动触发一次互检（不会无故重启——只有 gateway 挂了才会）
+~/healthcheck.sh; echo "exit: $?"
+```
