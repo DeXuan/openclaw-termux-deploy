@@ -1,5 +1,8 @@
 # 安卓手机一键部署 OpenClaw，打通微信 / QQ / 飞书
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![ShellCheck](https://github.com/DeXuan/openclaw-termux-deploy/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/DeXuan/openclaw-termux-deploy/actions/workflows/shellcheck.yml)
+
 > 把退役安卓手机变成 24 小时在线的 AI 机器人服务器 · 无需 root · Termux 原生方案
 >
 > 4 台真机验证：K60 (A15) · MIX 2S (A10) · Note 7 (A10) · Note 4X (A7) | OpenClaw 2026.7.1-2
