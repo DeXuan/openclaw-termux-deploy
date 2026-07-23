@@ -2,23 +2,22 @@
 
 > 最后更新：2026-07-23 | 全队定版：OpenClaw 2026.7.1-2
 >
-> **本次更新：** K60 深度分析、渠道/角色数据刷新、新增各设备独立章节、ClawChat 全队废弃
+> **全队就绪：** 4 机 SSH 互信 · crond 自愈全覆盖 · TS 三机互联 · 59 技能三机同步 · QQ+飞书全队双活
 
 ## 机队概览
 
-四台退役安卓手机组成 OpenClaw 机器人机队，Termux + runit 保活，Tailscale 组网，QQ + 飞书 + 微信 iLink 多渠道接入。K60 ↔ Note 7 已配置 SSH 互信 + 定时健康监控 + IP 漂移检测。
+四台退役安卓手机组成 OpenClaw 机器人机队，Termux + runit 保活，K60/Note 7/MIX 2S 三台 Tailscale 组网，Note 4X 仅 LAN。QQ + 飞书全队双活，K60 额外保留微信 iLink。4 机 SSH 全互信 + crond 自愈监控全覆盖。
 
 | 设备 | 代号 | SoC | RAM | 系统 | 角色 | 渠道 |
 |---|---|---|---|---|---|---|
 | **K60** | mondrian | 8+ Gen 1 | 16GB | A15 | 🥇 随身主力 | QQ + 飞书 + 微信 |
 | **Note 7** | lavender | 660 | 6GB | A10 | 🥈 家里轻量 | QQ + 飞书 |
 | **MIX 2S** | polaris | 845 | 6GB | A10 | 🥉 稳定副机 | QQ + 飞书 |
-| **Note 4X** | mido | 625 | 3GB | A7 | 🏅 韧性备机 | QQ + 飞书 + 微信(待移除) |
+| **Note 4X** | mido | 625 | 3GB | A7 | 🏅 韧性备机 | QQ + 飞书 |
 
 ```
-网络: 家庭宽带(出口 117.186.4.220) + Tailscale 组网
 TS 组网: K60 · Note 7 · MIX 2S  |  Note 4X 仅 LAN (A7不支持)
-4 机 SSH 全互信 ✅  crond 全队覆盖 ✅  IP 漂移告警 ✅
+4 机 SSH 全互信 ✅  crond 全队覆盖 ✅  自愈监控 ✅  IP 漂移告警 ✅
 ```
 
 ---
@@ -60,7 +59,7 @@ Python 3.14.6 (54 包, 含 numpy) | git 2.55.0 | cronie
 | WiFi | 192.168.1.23 | 家庭网络（当前不在） |
 | 蜂窝 | 出口 117.136.120.99 | 移动时使用 |
 | 热点网关 | PC 默认网关 | `sshk60` 自动回退 |
-| SSH 互信 | ↔ Note 7 (100.91.94.44) | ✅ |
+| SSH 互信 | ↔ Note 7 (TS) · MIX 2S (TS+LAN) · Note 4X (LAN) | ✅ |
 
 ### 渠道 & 模型
 
@@ -168,7 +167,7 @@ Python 3.14.6 (3 包) | git 2.55.0 | cronie | 缺: termux-api, vim/nano
 | Tailscale | 100.91.94.44 |
 | WiFi | 192.168.122.238 |
 | 出口 | 117.136.120.99 |
-| SSH 互信 | ↔ K60 ✅ |
+| SSH 互信 | ↔ K60 (TS) · MIX 2S (TS+LAN) · Note 4X (LAN) | ✅ |
 
 ### 渠道 & 模型
 
@@ -235,7 +234,7 @@ Swap: 2.5GB 总 / 619MB 用    gateway: RSS 357MB
 
 ```
 OpenClaw 2026.7.1-2 | Node v26.4.0 | libsqlite 3.53.3
-Python 3.14.6 | git 2.55.0 | 缺: cronie, termux-api
+Python 3.14.6 | git 2.55.0 | cronie | 缺: termux-api
 ```
 
 ### 网络
@@ -247,23 +246,24 @@ Python 3.14.6 | git 2.55.0 | 缺: cronie, termux-api
 | MAC | ⚠️ 随机 MAC | AE:1A:3A:F6:F9:0C |
 | SSH 互信 | ↔ K60 / Note 7 / Note 4X | ✅ |
 
+### 监控与自愈
+
+```bash
+# crontab
+*/5  * * * * ~/healthcheck.sh   # SSH 检查 K60 gateway (LAN)
+*/10 * * * * ~/self-check.sh    # 本地内存/磁盘/swap 阈值保护
+```
+
 ### 渠道 & 模型
 
 | 项目 | 状态 |
 |---|---|
 | QQ | ✅ AppID 1903080675 |
 | 飞书 | ✅ cli_aad1a7849078dd01 |
-| 微信 iLink | 已装未绑 |
-| 模型供应商 | ⚠️ 未明确配置（providers 为空） |
-| plugins.allow | qqbot, deepseek, feishu, openclaw-weixin |
-
-### 已完成
-
-- ✅ 59 技能已从 K60 同步
-- ✅ crond + healthcheck + self-check 已部署
-- ✅ Tailscale 已重装 (100.104.72.125)
-- ✅ 微信 iLink 已移除 (plugins.allow → qqbot, deepseek, feishu)
-- ✅ 默认模型 alibaba-model-studio/deepseek-v4-flash
+| 微信 iLink | 🗑️ 已移除 |
+| 默认模型 | alibaba-model-studio/deepseek-v4-flash (百炼免费) |
+| 技能 | 59 个 (从 K60 同步) |
+| plugins.allow | qqbot, deepseek, feishu |
 
 ### 诊断
 
@@ -301,8 +301,8 @@ Swap: 1GB zram / 298MB 用      gateway: RSS 391MB
 ### 软件栈
 
 ```
-OpenClaw 2026.7.1-2 | Node v26.4.0 (手动deb+hold) | libsqlite 3.53.0 (全队最低)
-Python 3.13.13 | git 2.53.0 | 缺: cronie
+OpenClaw 2026.7.1-2 | Node v26.4.0 (手动deb+hold) | libsqlite 3.53.3
+Python 3.13.13 | git 2.53.0 | cronie
 ```
 
 ### 网络
@@ -312,45 +312,45 @@ Python 3.13.13 | git 2.53.0 | 缺: cronie
 | WiFi | 192.168.1.19 (仅 LAN 直连) |
 | Tailscale | ❌ Android 7 不支持 |
 
+### 监控与自愈
+
+```bash
+# crontab
+*/5  * * * * ~/healthcheck.sh   # SSH 检查 K60 gateway (LAN)
+*/10 * * * * ~/self-check.sh    # 本地内存/磁盘/swap 阈值保护
+```
+
 ### 渠道 & 模型
 
 | 项目 | 状态 |
 |---|---|
 | QQ | ✅ AppID 1905222557 |
 | 飞书 | ✅ cli_aad19b0b53b89d24 |
-| 微信 iLink | ⚠️ 已装+绑定（占主号），待移除 |
-| 模型供应商 | qwen-portal / deepseek / alibaba-model-studio (3个) |
-| plugins.allow | feishu, openclaw-weixin, qqbot |
+| 微信 iLink | 🗑️ 已移除 |
+| 模型供应商 | qwen-portal / deepseek / alibaba-model-studio |
+| 技能 | 0 (3GB 内存限制，仅保留核心) |
+| plugins.allow | feishu, qqbot |
 
 ### 🔴 禁止并发 CLI
 
 3GB RAM 下 `openclaw channels probe` 或 `models list` 必 OOM。禁止任何 `openclaw agent` / `channels probe` / `models list` 命令，仅用 `grep` 查日志。
 
-### ⚠️ 高负载分析
+### 已完成 (2026-07-23)
 
-Load 5.01 持续偏高，排查发现：
-- `openclaw-gateway` 占 1.3% CPU / 391MB RSS（正常）
-- `quota_watcher.sh` 自 Jul22 持续运行（可疑）
-- 整体 load 虚高但 CPU 实际空闲（SD625 弱核心的 load 统计偏差）
-
-> 建议 kill quota_watcher.sh，改为 crontab 定时触发。
-
-### 待处理
-
-- **移除微信 iLink**：已绑占主号，需 openclaw channels disable + 删配置
-- **无 crond 监控**：pkg install cronie + 部署 healthcheck + self-check
-- **SQLite 升级**：3.53.0 → 3.53.3 (pkg install --only-upgrade libsqlite)
-- **0 技能**：Note 4X 最多装 10 个轻量技能，避免 OOM
+- ✅ SQLite 3.53.0 → 3.53.3
+- ✅ 微信 iLink 已从 plugins.allow 移除
+- ✅ quota_watcher.sh 已清理
+- ✅ crond + healthcheck + self-check 已部署
 
 ### 诊断
 
 | 🟢 优势 | 🟡 待优化 |
 |---|---|
-| 唯一三渠道全活设备 | 微信待移除(占主号) |
-| 唯一 qwen-portal 供应商 | 高负载需排查 |
-| 4100mAh 大电池续航好 | cronie + 自愈未部署 |
-| 支持 microSD 扩展 | SQLite 3.53.0 需升级 |
-| 耳机孔/红外等复古优势 | 禁并发 CLI 操作受限 |
+| 双渠道 QQ+飞书在线 | Load 持续偏高 (SD625 瓶颈) |
+| qwen-portal 唯一供应商 | 仅 LAN，无 Tailscale 冗余 |
+| 4100mAh 大电池续航好 | 3GB 内存禁并发 CLI |
+| 支持 microSD 扩展 | 0 技能 (内存限制) |
+| 耳机孔/红外等复古优势 | — |
 
 ---
 
@@ -359,15 +359,14 @@ Load 5.01 持续偏高，排查发现：
 ## SSH 互信（2026-07-23 全队打通）
 
 ```
-K60 (Tailscale)  ←→  Note 7 (Tailscale)     TS 直连
-K60 (LAN)        ←→  MIX 2S (LAN)            LAN 直连
-K60 (LAN)        ←→  Note 4X (LAN)           LAN 直连
-Note 7 (LAN)     ←→  MIX 2S (LAN)            LAN 直连
-Note 7 (LAN)     ←→  Note 4X (LAN)           LAN 直连
-MIX 2S (LAN)     ←→  Note 4X (LAN)           LAN 直连
+K60  ←TS→  Note 7    ←TS→  MIX 2S      (TS 全互联)
+K60  ←TS→  MIX 2S
+K60  ←LAN→ Note 4X   (Note 4X 仅 LAN)
+Note 7  ←LAN→ Note 4X
+MIX 2S ←LAN→ Note 4X
 ```
 
-> MIX 2S / Note 4X 无 Tailscale，通过 LAN IP 与 K60 / Note 7 通信。
+> K60 / Note 7 / MIX 2S 三台通过 Tailscale 互联。Note 4X (Android 7) 仅 LAN 与其余三台通信。
 
 ## 自愈系统
 
@@ -436,17 +435,15 @@ cat ~/healthcheck.last_restart  # 上次自愈重启时间戳
 
 ## 技能同步
 
-| | K60 | Note 7 |
-|---|---|---|
-| workspace | 58 个 (33MB) | 0 |
-| .agents | 55 个 ← 合并自 Note 7 | 55 个 → 已移交 |
-| 百炼 | modelstudioai-cli + bailian | 原持有 → 已移交 |
+| | K60 | Note 7 | MIX 2S | Note 4X |
+|---|---|---|---|---|
+| workspace skills | 59 (33MB) | 59 (已同步) | 59 (已同步) | 0 (内存限制) |
+| .agents | 55 | 55 (已移交) | 0 | 0 |
+| 百炼工具链 | modelstudioai-cli + bailian | — | — | — |
 
 ```bash
-# rsync 直推 (利用 SSH 互信)
-rsync -avz -e "ssh -p 8022" ~/.openclaw/workspace/skills/ Note7:~/.openclaw/workspace/skills/
-# Git 版本管理 (推荐)
-cd ~/.openclaw/workspace/skills && git init && git push
+# K60 → 其他设备 tar 直传 (利用 SSH 互信)
+ssh k60 "cd ~/.openclaw/workspace && tar czf - skills/ | ssh -p 8022 <target> 'cd ~/.openclaw/workspace && tar xzf -'"
 ```
 
 ## Note 7 → K60 工作交接
@@ -468,9 +465,9 @@ cd ~/.openclaw/workspace/skills && git init && git push
 
 ## 🟢 第一层：立即可做
 
-### ✅ 双机自愈监控（已部署）
+### ✅ 全队自愈监控（已部署）
 
-K60 ↔ Note 7 双向 SSH 巡检 + 自动重启 + QQ 告警。本地内存/磁盘阈值保护。
+K60 ↔ Note 7 双向 SSH 巡检 + 自动重启 + QQ 告警。MIX 2S / Note 4X 监控 K60。4 机本地自检全覆盖。
 
 ### ✅ IP 漂移自动告警（已部署）
 
@@ -539,17 +536,17 @@ K60: llama.cpp + Qwen2.5-7B · Note7: 0.5B-1.5B 分类摘要。
 
 ## A. 硬件对比
 
-| | K60 | MIX 2S | Note 7 | Note 4X |
+| | K60 | Note 7 | MIX 2S | Note 4X |
 |---|---|---|---|---|
-| **算力** | K60 (8+ Gen1) | MIX 2S (845) | Note 7 (660) | Note 4X (625) |
-| **内存** | K60 (16GB) | MIX 2S / Note 7 (6GB) | — | Note 4X (3GB) |
-| **系统版本** | K60 (A15) | MIX 2S / Note 7 (A10) | — | Note 4X (A7) |
-| **渠道完整度** | Note 4X (3 全活) | K60 (4 含 1 未绑) | MIX 2S / Note 7 (3 含 1 未绑) | — |
-| **网络冗余** | K60 (TS+热点) | MIX 2S / Note 7 (TS+LAN) | — | Note 4X (仅 LAN) |
-| **运维简易度** | MIX 2S / Note 7 (加固最少) | K60 (HyperOS 复杂) | Note 4X (无 root+无 TS) | — |
-| **稳定性** | Note 7 (四链路全验证) | K60 / MIX 2S | Note 4X (3GB 受限) | — |
+| **算力** | 🥇 8+ Gen1 | 🥈 660 | 🥉 845 | 🏅 625 |
+| **内存** | 16GB | 6GB | 6GB | 3GB |
+| **系统** | A15 | A10 | A10 | A7 |
+| **渠道** | QQ+飞书+微信 | QQ+飞书 | QQ+飞书 | QQ+飞书 |
+| **网络** | TS+蜂窝+WiFi | TS+LAN | TS+LAN | 仅 LAN |
+| **加固** | HyperOS 复杂 | 天然免疫 | 天然免疫 | 无 root |
+| **技能** | 59 | 59 | 59 | 0 (内存限制) |
 
-**一句话总结：** K60 是全能旗舰主力，MIX 2S 是加固最简单的稳定副机，Note 7 是全流程验证的可靠中端，Note 4X 是 3GB 内存下三渠道全活的韧性标杆。机队最大运维痛点不是单机稳定性，而是 **QQ 白名单四台联动**——宽带重拨一次需同时更新四个 AppID。
+**一句话总结：** K60 是全能旗舰主力，Note 7 是全流程验证的可靠轻量机，MIX 2S 是加固最简单的 845 稳定副机，Note 4X 是 3GB 内存下韧性标杆。机队最大运维痛点不是单机稳定性，而是 **QQ 白名单四台联动**——宽带重拨一次需同时更新四个 AppID。
 
 ---
 
