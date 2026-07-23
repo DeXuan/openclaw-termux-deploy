@@ -21,20 +21,22 @@ chmod +x openclaw-deploy
 ./openclaw-deploy
 ```
 
-交互式彩色 TUI，支持：
+彩色 TUI 工具箱，8 大功能模块，PC 和 Termux 都可以用。
 
 | 功能 | 说明 |
 |---|---|
-| 📦 部署新设备 | PC 远程 SSH 或本机直接安装 Node.js + OpenClaw + runit |
+| 🚀 新手向导 | 6 步引导式部署，零基础也能完成 |
+| 📦 部署设备 | PC 远程 SSH 或本机直接安装 Node.js + OpenClaw + runit |
 | 🔍 设备体检 | 一键诊断机型/版本/服务状态 |
-| ⚙️ 服务管理 | 启停/重启/实时日志 |
-| 🩺 自愈系统 | 安装互检 + 本地自检 + crontab 定时调度 |
-| 📊 机队仪表盘 | 四台设备 gateway/内存/磁盘/swap 一目了然 |
-| 🔧 技能工具箱 | 安装/搜索/同步技能到远程设备 |
+| 📊 机队仪表盘 | 四台设备 gateway/内存/磁盘/swap/在线时长实时展示 |
+| ⚙️ 服务管理 | 启停/重启/实时日志（本机 + 远程） |
+| 🩺 自愈系统 | 双向互检 + 自动重启 + 内存/磁盘阈值保护 |
+| 🧩 技能工具箱 | 安装/搜索/同步技能到远程设备 |
 | 🤖 模型与渠道 | 模型管理、渠道状态、免费额度查询 |
-| 🔄 系统更新 | 升级 OpenClaw / Node.js |
 
-**非交互模式：** `./openclaw-deploy dashboard` | `./openclaw-deploy check` | `./openclaw-deploy install K60`
+**非交互模式：** `./openclaw-deploy dashboard` | `./openclaw-deploy check` | `./openclaw-deploy wizard`
+
+> 📖 **完整使用指南：[GUIDE.md](GUIDE.md)** — 界面截图、功能详解、常见问题、进阶玩法
 
 ---
 
