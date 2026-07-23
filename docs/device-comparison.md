@@ -6,7 +6,7 @@
 
 ## 机队概览
 
-四台退役安卓手机组成 OpenClaw 机器人机队，Termux + runit 保活，Tailscale 组网，QQ + 飞书 + 微信 iLink 多渠道接入。
+四台退役安卓手机组成 OpenClaw 机器人机队，Termux + runit 保活，Tailscale 组网，QQ + 飞书 + 微信 iLink 多渠道接入。K60 ↔ Note 7 已配置 SSH 互信 + 定时健康监控 + IP 漂移检测。
 
 | 设备 | 代号 | SoC | RAM | 系统 | 角色 | 渠道 |
 |---|---|---|---|---|---|---|
@@ -17,9 +17,8 @@
 
 ```
 网络: 家庭宽带(出口 117.186.4.220) + Tailscale 组网
-K60  ↔ Note 7  SSH 互信 ✅
-ClawChat 全队废弃 (2026-07-23)
-QQ 白名单: 四台联动，宽带重拨需同时更新
+K60 ↔ Note 7  SSH 互信 ✅  crond 健康监控 ✅  IP 漂移告警 ✅
+ClawChat 全队废弃 · QQ 白名单四台联动
 ```
 
 ---
@@ -38,7 +37,7 @@ QQ 白名单: 四台联动，宽带重拨需同时更新
 | 特殊硬件 | 屏下指纹、红外、NFC、VC 均热板 |
 | 传感器 | 摄像头、GPS、通知（Termux:API v0.59.1 已装） |
 
-### 运行状态 (2026-07-23 实测)
+### 运行状态 (2026-07-23)
 
 ```
 CPU:  load 3.17 (70% 空闲)    内存: 15.5GB 总 / 6.9GB 可用
@@ -49,8 +48,8 @@ Swap: 16.8GB 总 / 4.3GB 用    gateway: RSS 349MB / 12 线程
 ### 软件栈
 
 ```
-OpenClaw 2026.7.1-2 | Node v24.17.0 LTS (仓库原生) | libsqlite 3.53.3
-Python 3.14.6 (54 包, 含 numpy) | git 2.55.0 | SSH 10.4p1
+OpenClaw 2026.7.1-2 | Node v24.17.0 LTS | libsqlite 3.53.3
+Python 3.14.6 (54 包, 含 numpy) | git 2.55.0 | cronie
 ```
 
 ### 网络
@@ -70,9 +69,8 @@ Python 3.14.6 (54 包, 含 numpy) | git 2.55.0 | SSH 10.4p1
 | QQ | ✅ AppID 102825839 |
 | 飞书 | ✅ |
 | 微信 iLink | ✅ 970ed7c8f462-im-bot |
-| 已配置模型 | 35 个 ⚠️ 建议精简到 5 |
 | 默认模型 | alibaba-model-studio/qwen3.7-max-preview |
-| 实际主力 | alibaba-model-studio/qwen3.7-max-2026-06-08（阿里百炼免费额度） |
+| 实际主力 | alibaba-model-studio/qwen3.7-max-2026-06-08（百炼免费额度） |
 
 ### 技能
 
@@ -87,35 +85,14 @@ Python 3.14.6 (54 包, 含 numpy) | git 2.55.0 | SSH 10.4p1
 
 phantom killer 已关+锁 persistent · 权限自动撤销已禁 · Doze ✅ · Boot ✅ · SSH 免密 ✅
 
-### 诊断
-
-| 🟢 优势 | 🟡 待优化 | 🚀 潜力 |
-|---|---|---|
-| 16GB，唯一可并发 CLI | 模型 35→5 精简 | 本地小模型 (llama.cpp) |
-| 蜂窝+WiFi 双网冗余 | 电池 540 循环智能充放电 | 手机眼 (拍照+GPS+视觉) |
-| 摄像头/GPS/通知 | IP 漂移自动检测 | 飞书告警中枢 |
-| Python 54 包 + numpy | deepseek-chat 清理 | 边缘计算 + API 网关 |
-| 335GB 空闲 | — | 继承 Note 7 创意工作 |
-
 ### 性能优化 (2026-07-23)
 
-**目标：** 降低 Swap 使用、提升 Node heap 上限、减少 GC 频率、优化启动速度。
-
-**方案：** 修改 runit 服务配置，调整 Node.js V8 引擎参数。
+修改 runit 服务配置，调整 Node.js V8 引擎参数：
 
 ```bash
 # $PREFIX/var/service/openclaw/run
 export NODE_OPTIONS="--dns-result-order=ipv4first --max-old-space-size=4096 --max-semi-space-size=128"
 ```
-
-| 参数 | 默认值 | 优化值 | 作用 |
-|---|---|---|---|
-| `max-old-space-size` | 1120MB | **4096MB** | 老生代堆上限扩大 3.6x，减少 Major GC 触发频率 |
-| `max-semi-space-size` | 16MB | **128MB** | 新生代 scavenge 空间扩大 8x，短命对象回收更高效 |
-
-> ⚠️ `--initial-old-space-size=512` 被 Node 安全策略拦截（不允许在 NODE_OPTIONS 中设置），已移除。
-
-**优化结果：**
 
 | 指标 | 优化前 | 优化后 | 变化 |
 |---|---|---|---|
@@ -123,22 +100,39 @@ export NODE_OPTIONS="--dns-result-order=ipv4first --max-old-space-size=4096 --ma
 | **GC 老生代阈值** | 1120MB | **4096MB** | Major GC 间隔 ↑ 3.6x |
 | **GC 新生代阈值** | 16MB | **128MB** | Scavenge 间隔 ↑ 8x |
 | **gateway RSS** | 362MB | 349MB | -13MB |
-| **gateway Swap** | 0 | 0 | 始终保持干净 |
-| **系统 Swap** | 4.3GB | 4.3GB（观察中） | 预期随运行自然回落至 < 2GB |
-| **启动时间** | 13.6s | 14.5s | 持平（瓶颈在 35 个模型元数据加载） |
-| **E2E** | OK | OK | 正常 |
+| **启动时间** | 13.6s | 14.5s | 持平（瓶颈在模型元数据） |
 
-**生效验证：**
+> ⚠️ `--initial-old-space-size` 被 Node 安全策略拦截，已移除。
+
+### 定时监控 (2026-07-23 部署)
+
+```bash
+# crontab
+*/5  * * * * ~/healthcheck.sh   # SSH 检查 Note 7 gateway
+*/10 * * * * ~/check-ip.sh      # 检测出口 IP 变化
 ```
-$ cat /proc/$(pgrep -f openclaw-gateway)/environ | tr '\0' '\n' | grep NODE_OPTIONS
-NODE_OPTIONS=--dns-result-order=ipv4first --max-old-space-size=4096 --max-semi-space-size=128
-```
+
+**健康检查** (`~/healthcheck.sh`)：SSH 到 Note 7 探活 gateway，异常时通过 K60 的 QQ bot 推送告警。
+
+**IP 漂移检测** (`~/check-ip.sh`)：对比当前出口 IP 与上次记录，变化时通过 QQ bot 推送新 IP + 白名单更新提醒。
+
+正常时静默，不产生消息、不消耗 token。
+
+### 诊断
+
+| 🟢 优势 | 🟡 待优化 | 🚀 潜力 |
+|---|---|---|
+| 16GB，唯一可并发 CLI | 模型 35→5 精简 | 本地小模型 (llama.cpp) |
+| 蜂窝+WiFi 双网冗余 | 电池 540 循环智能充放电 | 手机眼 (拍照+GPS+视觉) |
+| 摄像头/GPS/通知 | — | 飞书告警中枢 |
+| Python 54 包 + numpy | — | 边缘计算 + API 网关 |
+| 335GB 空闲 + crond 监控 | — | 继承 Note 7 创意工作 |
 
 ---
 
 ## Note 7 — 家里轻量任务机
 
-> 🆕 创意生成工作（视频/图片/配音）已于 2026-07-23 移交 K60。
+> 🆕 创意生成工作已移交 K60。cronie 已装，每 5 分钟 SSH 检查 K60 gateway。
 
 ### 硬件
 
@@ -152,16 +146,16 @@ NODE_OPTIONS=--dns-result-order=ipv4first --max-old-space-size=4096 --max-semi-s
 ### 运行状态 (2026-07-23)
 
 ```
-CPU:  load 6.73 (视频传输中，传完回落)   内存: 5.6GB 总 / 3.1GB 可用
+CPU:  load 6.73 (视频传输中)   内存: 5.6GB 总 / 3.1GB 可用
 Swap: 2.5GB 总 / 666MB 用    gateway: RSS 319MB / 12 线程
-磁盘: 13GB 已用 (26%) / 37GB 空闲    日志: 7.3MB (需轮转)
+磁盘: 13GB 已用 (26%) / 37GB 空闲    日志: 7.3MB
 ```
 
 ### 软件栈
 
 ```
-OpenClaw 2026.7.1-2 | Node v26.4.0 (撤版前安装) | libsqlite 3.53.3
-Python 3.14.6 (3 包) | git 2.55.0 | 缺: termux-api, vim/nano
+OpenClaw 2026.7.1-2 | Node v26.4.0 | libsqlite 3.53.3
+Python 3.14.6 (3 包) | git 2.55.0 | cronie | 缺: termux-api, vim/nano
 ```
 
 ### 网络
@@ -170,8 +164,8 @@ Python 3.14.6 (3 包) | git 2.55.0 | 缺: termux-api, vim/nano
 |---|---|
 | Tailscale | 100.91.94.44 |
 | WiFi | 192.168.122.238 |
-| 出口 | 117.136.120.99 (与 K60 同) |
-| 网关延迟 | 27-49ms |
+| 出口 | 117.136.120.99 |
+| SSH 互信 | ↔ K60 ✅ |
 
 ### 渠道 & 模型
 
@@ -180,18 +174,23 @@ Python 3.14.6 (3 包) | git 2.55.0 | 缺: termux-api, vim/nano
 | QQ | ✅ AppID 1905221791 |
 | 飞书 | ✅ |
 | 微信 iLink | 🗑️ 已移除 |
-| 已配置模型 | 11 个 🟢 |
 | plugins.allow | feishu, qqbot, deepseek（全队最简） |
-| 残留条目 | 无 ✅ |
+
+### 定时监控
+
+```bash
+# crontab: 每 5 分钟 SSH 检查 K60 gateway，异常时通过 Note 7 QQ bot 告警
+*/5 * * * * ~/healthcheck.sh
+```
 
 ### 🔴 禁止并发 CLI
 
-一次 `openclaw models list` 产生 **33.8% CPU + 267MB RAM** 孤儿进程，CPU load 冲到 8+。
+`openclaw models list` 产生 **33.8% CPU + 267MB RAM** 孤儿进程。
 
-```
-✅ sv status / curl / tail / ps
-❌ models list / channels probe / agent
-```
+> ✅ sv status / curl / tail / ps
+> ❌ models list / channels probe / agent
+>
+> 注意：告警时 `openclaw agent` 仅在异常时触发（极少），不影响正常负载。
 
 ### 诊断
 
@@ -200,13 +199,15 @@ Python 3.14.6 (3 包) | git 2.55.0 | 缺: termux-api, vim/nano
 | 配置极简 (3 plugins) | pkg install termux-api vim |
 | A10 天然免疫 phantom killer | 日志轮转 (7.3MB) |
 | 全链路自动恢复验证通过 | Node 26.4.0 升级风险 |
-| 与 K60 SSH 互信 ✅ | — |
+| SSH 互信 + crond 监控 ✅ | — |
 
----
+# 版本管理: Git 仓库 (推荐)
+cd ~/.openclaw/workspace/skills && git init && git push  # 其他设备 git pull
+```
 
 ## MIX 2S — 待重新定位
 
-> 离线中。上线后按 K60/Note 7 模板全面分析。
+> 离线中。上线后按此模板全面分析 + 部署监控。
 
 | 项目 | 数值 |
 |---|---|
@@ -214,7 +215,7 @@ Python 3.14.6 (3 包) | git 2.55.0 | 缺: termux-api, vim/nano
 | 系统 | Android 10 / MIUI 12.5.1 |
 | Tailscale | 100.104.72.125 |
 | 渠道 | QQ (1903080675) + 飞书 + 微信 iLink (已装未绑) |
-| 待办 | 全面分析、移除微信、技能盘点、SSH 互信 |
+| 待办 | 全面分析、移除微信、技能盘点、SSH 互信、部署 crond 监控 |
 
 ---
 
@@ -225,7 +226,7 @@ Python 3.14.6 (3 包) | git 2.55.0 | 缺: termux-api, vim/nano
 | 项目 | 数值 |
 |---|---|
 | SoC | 骁龙 625 / 3GB (禁并发 CLI) |
-| 系统 | Android 7.0 / MIUI 11（全队最老） |
+| 系统 | Android 7.0 / MIUI 11 |
 | Tailscale | ❌ 不支持 (A7) |
 | Node | 26.4.0 手动 deb + apt-mark hold |
 | libsqlite | 3.53.0（全队最低） |
@@ -235,21 +236,38 @@ Python 3.14.6 (3 包) | git 2.55.0 | 缺: termux-api, vim/nano
 
 # 联合作业与运维
 
-## SSH 设备间互信
-
-K60 ↔ Note 7 已配置双向免密（Tailscale 固定 IP）。
+## SSH 互信
 
 ```bash
-# 配置
-ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
-cat ~/.ssh/id_ed25519.pub | ssh 对端 'cat >> ~/.ssh/authorized_keys'
-
-# 使用
-ssh -p 8022 u0_a171@100.91.94.44     # K60 → Note 7
-ssh -p 8022 u0_a129@100.118.60.29    # Note 7 → K60
+ssh -p 8022 u0_a171@100.91.94.44     # K60 → Note 7 ✅
+ssh -p 8022 u0_a129@100.118.60.29    # Note 7 → K60 ✅
 ```
 
-**应用：** scp 互传、rsync 同步技能、互相监控 gateway、远程重启。
+## 双机健康监控 (2026-07-23 部署)
+
+| 监控方 | 目标 | 频率 | 告警方式 |
+|---|---|---|---|
+| K60 | Note 7 gateway | 每 5 分钟 | K60 QQ bot (102825839) |
+| Note 7 | K60 gateway | 每 5 分钟 | Note 7 QQ bot (1905221791) |
+| K60 | 出口 IP 变化 | 每 10 分钟 | K60 QQ bot |
+
+**原理：**
+
+```
+K60 crond → SSH Note7 → curl 127.0.0.1:18789 → 200=正常 非200=QQ告警
+Note7 crond → SSH K60 → curl 127.0.0.1:18789 → 200=正常 非200=QQ告警
+K60 crond → curl ip.sb → 对比上次IP → 变化=QQ告警(含白名单更新提醒)
+```
+
+**正常时静默，不作任何操作，不消耗 token。** 仅在异常时触发 `openclaw agent` 推送 QQ 消息。
+
+**部署文件：**
+
+| 文件 | 位置 | 说明 |
+|---|---|---|
+| `~/healthcheck.sh` | K60, Note 7 | 健康检查脚本 |
+| `~/check-ip.sh` | K60 | IP 漂移检测 |
+| crontab | K60: `*/5 + */10` · Note 7: `*/5` | 定时触发 |
 
 ## 技能同步
 
@@ -260,27 +278,22 @@ ssh -p 8022 u0_a129@100.118.60.29    # Note 7 → K60
 | 百炼 | modelstudioai-cli + bailian | 原持有 → 已移交 |
 
 ```bash
-# 一次性
-ssh K60 'tar czf ~/skills.tar.gz -C ~/.openclaw/workspace skills/'
-ssh K60 'scp -P 8022 ~/skills.tar.gz Note7:~/.openclaw/note7-handoff/'
-
-# 长期: rsync 直推 (利用 SSH 互信)
+# rsync 直推 (利用 SSH 互信)
 rsync -avz -e "ssh -p 8022" ~/.openclaw/workspace/skills/ Note7:~/.openclaw/workspace/skills/
-
-# 版本管理: Git 仓库 (推荐)
-cd ~/.openclaw/workspace/skills && git init && git push  # 其他设备 git pull
+# Git 版本管理 (推荐)
+cd ~/.openclaw/workspace/skills && git init && git push
 ```
 
 ## Note 7 → K60 工作交接
 
-| 类别 | 内容 | 大小 | K60 存储 |
-|---|---|---|---|
-| Agent 记忆 | openclaw-agent.sqlite + state DB | 3.4MB | `note7-handoff/` (参考，不覆盖主 DB) |
-| 工作区 | AGENTS/IDENTITY/SOUL 等 + memory | ~50KB | `workspace/note7-*.md` |
-| 图片 | 26 张 AI 生成 + QQ 下载 | 23MB | `media/outbound/` 已合入 |
-| 视频/音频 | 388 个文件 (短剧/配音) | 5.6GB | `note7-handoff/out/` (后台传输中) |
-| 百炼 | modelstudioai-cli + bailian | 2.9MB | `~/modelstudioai-cli/` + `skills/bailian-cli/` |
-| 技能 | .agents/skills/ 55 个 | 5.6MB | `~/.agents/skills/` 已合入 |
+| 类别 | 大小 | 状态 |
+|---|---|---|
+| Agent 记忆 | 3.4MB | `note7-handoff/` 参考，不覆盖 |
+| 工作区 | ~50KB | `workspace/note7-*.md` |
+| 图片 | 23MB | `media/outbound/` 已合入 |
+| 视频/音频 | 5.6GB | `note7-handoff/out/` |
+| 百炼工具链 | 2.9MB | 已安装 |
+| .agents 技能 | 5.6MB | 已合入 |
 
 ---
 
@@ -290,117 +303,70 @@ cd ~/.openclaw/workspace/skills && git init && git push  # 其他设备 git pull
 
 ## 🟢 第一层：立即可做
 
-### 双机健康监控
+### ✅ 双机健康监控（已部署）
 
-```bash
-# 各机 crontab 每 5 分钟 SSH 互检 gateway
-*/5 * * * * ssh 对端 'curl -s http://127.0.0.1:18789/' | grep -q 200 || \
-  curl -X POST $FEISHU_WEBHOOK -d '{"text":"🚨 对端 gateway 无响应"}'
-```
+K60 ↔ Note 7 双向 SSH 巡检 + QQ 告警。
 
-### IP 漂移自动告警
+### ✅ IP 漂移自动告警（已部署）
 
-```bash
-# */10 * * * *
-CUR=$(curl -4 -s https://api.ip.sb/ip)
-[ "$CUR" != "$(cat ~/.last_ip)" ] && echo "$CUR" > ~/.last_ip && \
-  curl -X POST $FEISHU_WEBHOOK -d "{\"text\":\"⚠️ IP → $CUR\"}"
-```
+出口 IP 变化 → K60 QQ bot 推送新 IP + 白名单更新提醒。
 
 ### 模型免费额度保护
 
 ```bash
-# 百炼 CLI 免费额度自动停用（需先完成控制台认证）
-bl auth login --console          # PC 端完成，scp config.json 到 K60
-bl usage freetier --all          # 所有模型开启免费额度耗尽自动停用
+bl auth login --console          # PC 端 OAuth → scp config 到 K60
+bl usage freetier --all          # 所有模型免费额度耗尽自动停用
 bl usage summary                 # 每日额度巡检
 ```
 
+### K60 配置清理
+
+- 模型 35→5 精简
+- 默认模型切 deepseek-v4-flash
+- 删除退役的 deepseek-chat
+
 ## 🟡 第二层：能力释放
 
-### K60 "手机眼"（独有能力）
+### K60 "手机眼"
 
-```
-拍照 → termux-camera-photo → 回传图片
-定位 → termux-location → 返回 GPS
-扫码 → 拍照 + Python OCR
-```
+拍照/定位/扫码——Termux:API 已装。
 
 ### 分布式定时任务
 
-```
-K60 (移动，白天):              Note 7 (固定，24h):
-  金融数据抓取 (交易时间)        网络质量监控
-  AI 日报 (08:30)              日志聚合+轮转 (03:00)
-  股价预警 (实时)              配置备份 (04:00)
-  视频渲染 (按需)              IP 巡检 (每 10min)
-```
+K60 (白天) 金融抓取 + 日报 + 预警 · Note 7 (24h) 网络监控 + 日志轮转 + 备份。
 
 ### Note 7 文件服务
 
 ```bash
 cd ~/.openclaw/workspace/out && python -m http.server 8080
-# → http://100.91.94.44:8080 (Tailscale 内网)
 ```
 
 ## 🔴 第三层：压榨极限
 
 ### 本地小模型
 
-```
-K60:  llama.cpp + Qwen2.5-7B (~4GB) → 离线推理，数据不出设备
-Note7: llama.cpp + 0.5B-1.5B 模型 → 意图分类、文本摘要
-```
+K60: llama.cpp + Qwen2.5-7B · Note7: 0.5B-1.5B 分类摘要。
 
-### API 网关
+### API 网关 / 消息管道 / sshfs / 四机联邦 / 自愈系统 / nodes 集成 / 边缘 AI
 
-```
-K60 Flask/FastAPI:  GET /photo · /location · POST /agent · GET /fleet-status
-Note7 轻量:         GET /logs · /health
-→ PC/其他设备通过 Tailscale IP 直接调用
-```
-
-### 消息管道协作
-
-```
-K60 收复杂任务 → 拆分 → SSH 分发 Note7 → 汇聚回复
-例: "分析这只股票" → K60 行情+指标, Note7 新闻+财报 → 综合分析
-```
-
-### 统一存储 (sshfs)
-
-```bash
-sshfs -p 8022 Note7:~/out ~/mounts/note7-out/
-sshfs -p 8022 K60:~/skills ~/mounts/k60-skills/
-```
-
-## 🧭 远景
-
-- **四机联邦：** 全队上线+互信 → 按能力/模型分级路由 → 地理冗余
-- **自愈系统：** A 机检测 B 机异常 → SSH 重启 → 失败告警 → Git 回滚配置
-- **nodes 原生集成：** 研究 `openclaw nodes` 配对，K60 gateway 纳管 Note 7 为 node
-- **边缘 AI 集群：** K60(7B) + Note7(1.5B) 双模型协同，零成本推理
+（详见此前版本路线图）
 
 ## 📊 场景矩阵
 
-| 场景 | 难度 | 价值 | 耗时 | 依赖 |
-|---|---|---|---|---|
-| 双机健康监控+告警 | ⭐ | 🔴 高 | 30min | cron+飞书 webhook |
-| IP 漂移自动检测 | ⭐ | 🔴 高 | 15min | cron+curl |
-| 免费额度保护 | ⭐⭐ | 🔴 高 | 15min | bailian CLI + OAuth |
-| 手机眼 (拍照/GPS) | ⭐⭐ | 🟡 中 | 1h | termux-api |
-| 分布式定时任务 | ⭐⭐ | 🟡 中 | 2h | Python+cron |
-| 文件服务 | ⭐ | 🟢 低 | 5min | http.server |
-| 飞书告警中枢 | ⭐⭐ | 🔴 高 | 1h | Python+webhook |
-| 本地小模型推理 | ⭐⭐⭐ | 🟡 中 | 2h | llama.cpp |
-| API 网关 | ⭐⭐⭐ | 🟡 中 | 3h | Flask/FastAPI |
-| 技能自主开发 | ⭐⭐⭐ | 🔴 高 | 持续 | Python+Git |
-| 消息管道协作 | ⭐⭐⭐⭐ | 🟢 低 | 4h | SSH+脚本 |
-| sshfs 统一存储 | ⭐⭐ | 🟢 低 | 30min | pkg install sshfs |
-| 四机联邦 | ⭐⭐⭐⭐ | 🔴 高 | 持续 | 全队上线+互信 |
-| 自愈系统 | ⭐⭐⭐ | 🔴 高 | 4h | cron+SSH+Git |
-| nodes 原生集成 | ⭐⭐⭐⭐⭐ | 🔴 高 | 未知 | API 研究 |
-| 边缘 AI 集群 | ⭐⭐⭐⭐ | 🔴 高 | 4h | llama.cpp ×2 |
+| 场景 | 难度 | 价值 | 状态 |
+|---|---|---|---|
+| 双机健康监控+告警 | ⭐ | 🔴 高 | ✅ 已部署 |
+| IP 漂移自动检测 | ⭐ | 🔴 高 | ✅ 已部署 |
+| 免费额度保护 | ⭐⭐ | 🔴 高 | ⬜ 待认证 |
+| K60 配置清理 | ⭐ | 🟡 中 | ⬜ |
+| 手机眼 (拍照/GPS) | ⭐⭐ | 🟡 中 | ⬜ |
+| 分布式定时任务 | ⭐⭐ | 🟡 中 | ⬜ |
+| 文件服务 | ⭐ | 🟢 低 | ⬜ |
+| 飞书告警中枢 | ⭐⭐ | 🔴 高 | ⬜ |
+| 本地小模型推理 | ⭐⭐⭐ | 🟡 中 | ⬜ |
+| 四机联邦 | ⭐⭐⭐⭐ | 🔴 高 | ⬜ |
+| 自愈系统 | ⭐⭐⭐ | 🔴 高 | ⬜ |
+| 边缘 AI 集群 | ⭐⭐⭐⭐ | 🔴 高 | ⬜ |
 
 ---
 
@@ -414,27 +380,26 @@ sshfs -p 8022 K60:~/skills ~/mounts/k60-skills/
 | RAM | 16GB LPDDR5 | 6GB LPDDR4x | 6GB LPDDR4X | 3GB LPDDR3 |
 | 存储 | 462GB UFS 3.1 | UFS 2.1 | 50GB eMMC | eMMC 5.1 |
 | 电池 | 5500mAh | 3400mAh | 4000mAh | 4100mAh |
-| 年份 | 2022 | 2018 | 2019 | 2017 |
 
 ## B. 系统与网络
 
 | | K60 | MIX 2S | Note 7 | Note 4X |
 |---|---|---|---|---|
 | Android | 15 / HyperOS | 10 / MIUI 12.5 | 10 / MIUI 12.5 | 7.0 / MIUI 11 |
-| 加固难度 | 🔴 高 | 🟢 低 | 🟢 低 | 🟢 低 |
 | Tailscale | 100.118.60.29 | 100.104.72.125 | 100.91.94.44 | ❌ |
 | LAN IP | 192.168.1.23 | 192.168.1.20 | 192.168.122.238 | 192.168.1.19 |
 | SSH 互信 | ↔ Note 7 | ❌ | ↔ K60 | ❌ |
+| crond 监控 | ✅ | ❌ | ✅ | ❌ |
 
-## C. 软件与升级风险
+## C. 软件与升级
 
 | | K60 | MIX 2S | Note 7 | Note 4X |
 |---|---|---|---|---|
 | Node | 24.17.0 LTS | 26.4.0 | 26.4.0 | 26.4.0 deb |
 | libsqlite | 3.53.3 | 3.53.3 | 3.53.3 | 3.53.0 |
 | Python | 3.14+numpy | — | 3.14 | — |
-| git | ✅ | — | ✅ | — |
-| **NODE_OPTIONS** | `--max-old=4096 --max-semi=128` | 默认 | 默认 | 默认 |
+| cronie | ✅ | — | ✅ | — |
+| NODE_OPTIONS | `max-old=4096 semi=128` | 默认 | 默认 | 默认 |
 | 升级风险 | 🟢 | 🟡 | 🟡 | 🔴 |
 
 ## D. 运维命令
@@ -444,11 +409,12 @@ sshfs -p 8022 K60:~/skills ~/mounts/k60-skills/
 | 服务状态 | `sv status openclaw` (先 `export SVDIR=$PREFIX/var/service`) |
 | Gateway 探活 | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:18789/` |
 | 查出口 IP | `curl -4 -s https://api.ip.sb/ip` |
+| 健康检查日志 | `cat ~/healthcheck.log` |
+| IP 漂移日志 | `cat ~/check-ip.log` (K60) / `cat ~/.last_ip` |
+| 定时任务 | `crontab -l` |
 | 版本三连 | `openclaw --version` / `node --version` / SQLite 版本 |
-| 渠道列表 | `openclaw channels list --all \| grep enabled` (Note 7 用日志) |
 | 重启 | `sv restart openclaw` |
 | 日志 | `$PREFIX/var/log/sv/openclaw/current` |
 | K60→Note7 | `ssh -p 8022 u0_a171@100.91.94.44` |
 | Note7→K60 | `ssh -p 8022 u0_a129@100.118.60.29` |
 | 升级流程 | ① K60 → ② MIX 2S → ③ Note 7 → ④ Note 4X |
-| 查 Node 参数 | `cat /proc/$(pgrep -f gateway)/environ \| tr '\0' '\n' \| grep NODE` |
