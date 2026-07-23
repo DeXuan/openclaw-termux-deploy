@@ -480,3 +480,100 @@ bailian-quota-switcher/
 - [openclaw-termux-deploy](https://github.com/DeXuan/openclaw-termux-deploy) — OpenClaw 安卓部署
 - [阿里云百炼控制台](https://bailian.console.aliyun.com) — 模型管理/API Key
 - [百炼模型定价](https://help.aliyun.com/zh/model-studio/model-pricing) — 免费额度说明
+
+---
+
+# 踩坑速查（16 条）
+
+## 核心坑
+
+### 坑 1：403 导致 auth profile 全局失效 ⚠️ 最频繁
+
+**现象**：主模型返回 403 (quota exhausted)，fallback 链上所有模型报 `Couldn't sign in to alibaba-model-studio`
+
+**原因**：OpenClaw 把单个模型的 403 误判为 provider 级别的 auth 失效
+
+**解法**：Watcher 检测 403 → `paste-api-key` 重认证 → 切主模型 → `sv restart`
+
+### 坑 2：config 路径写错触发校验失败
+
+**现象**：手动编辑 `c.models.default/fallbacks` 后 `openclaw config validate` 报 `Invalid input`
+
+**原因**：正确路径是 `c.agents.defaults.model.primary` 和 `c.agents.defaults.model.fallbacks`
+
+**解法**：永远只读写 `c.agents.defaults.model.*`，部署完立即 `delete c.models.default; delete c.models.fallbacks`
+
+### 坑 3：API Key 在 SSH 单引号中不展开
+
+**现象**：Gateway 启动报 `Environment variable "K" is missing or empty`
+
+**原因**：Bash 单引号内变量不展开；Node 不认环境变量引用的 Key 字符串
+
+**解法**：先 `echo "$KEY" | ssh ... 'cat > ~/bailian_key.txt'`，再 Node 里 `fs.readFileSync` 读取
+
+### 坑 4：crash-loop breaker 锁死全部渠道
+
+**现象**：反复重启 gateway 后 QQ/飞书/微信全部 `channel autostart suppressed`
+
+**触发条件**：300 秒内 3 次非正常退出
+
+**解法**：
+```bash
+export SVDIR=$PREFIX/var/service
+sv down openclaw
+rm -f ~/.openclaw/logs/stability/*.json
+sv up openclaw
+```
+
+## 部署坑
+
+### 坑 5：Termux 没有 /tmp
+**现象**：`cat > /tmp/xxx` 静默失败 → **解法**：用 `$HOME/xxx` 或 `$PREFIX/tmp`
+
+### 坑 6：curl 走 IPv6 导致 HTTP:000
+**现象**：gateway 在跑但 `curl http://127.0.0.1:18789/` 返回 000 → **解法**：`curl -4` 强制 IPv4
+
+### 坑 7：低端机启动慢
+**现象**：SD660 冷启动需 40-60 秒 → **解法**：等 15 秒再验证 HTTP
+
+### 坑 8：models.json 中 model 未定义但被 fallback 引用
+**现象**：`Unknown model: alibaba-model-studio/qwen-turbo` → **解法**：部署后 `openclaw models list | grep alibaba` 确认数量匹配
+
+### 坑 9：多设备同时部署导致全队离线
+**现象**：并行部署 4 台 → crash-loop → **解法**：逐台部署，金丝雀流程
+
+## 账号坑
+
+### 坑 10："仅使用免费额度"模式导致全部模型 403
+**现象**：所有模型 403 → **解法**：去百炼控制台关掉该模式
+
+### 坑 11：账户欠费
+**现象**：`400 Arrearage` → **解法**：百炼控制台充值
+
+### 坑 12：Key 被 revoke
+**现象**：`401 Incorrect API key` → **解法**：百炼控制台重新生成
+
+## 额度坑
+
+### 坑 13：API 返回额度与 Excel 不一致
+**原因**：Key 不同 / 账户级与模型级限额不同步 → **解法**：部署前 curl 验证 Key
+
+### 坑 14：两个 Key 额度互相不知
+**现象**：切 Key 后以为所有模型都有额度 → **解法**：一台设备只配一个 Key
+
+## Watcher 坑
+
+### 坑 15：Watcher 随 SSH 会话退出而终止
+**解法**：必须用 `nohup ... &` 启动，加入 `~/.termux/boot/start-services.sh`
+
+### 坑 16：Watcher 冷却时间太短导致循环切换
+**现象**：模型 A 耗尽 → 切到 B → 立刻又切到 C → **解法**：COOLDOWN=30 秒
+
+### 坑 17：Provider 名称不统一导致 "Unknown model"
+**现象**：不同部署批次用了不同 provider 名 → **解法**：统一为 `alibaba-model-studio`
+
+### 坑 18：free_quota.json 缺失导致 watcher 崩溃
+**解法**：升级 watcher v2.2 或手动创建 `echo '{"models":{}}' > ~/.openclaw/free_quota.json`
+
+### 坑 19：旧 provider 残骸在 openclaw.json 中
+**现象**：`custom model providers must declare models` → **解法**：Node 脚本删除残缺 provider 定义
