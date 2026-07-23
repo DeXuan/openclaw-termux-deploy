@@ -355,12 +355,18 @@ Load 5.01 持续偏高，排查发现：
 
 # 联合作业与运维
 
-## SSH 互信
+## SSH 互信（2026-07-23 全队打通）
 
-```bash
-ssh -p 8022 u0_a171@100.91.94.44     # K60 → Note 7 ✅
-ssh -p 8022 u0_a129@100.118.60.29    # Note 7 → K60 ✅
 ```
+K60 (Tailscale)  ←→  Note 7 (Tailscale)     TS 直连
+K60 (LAN)        ←→  MIX 2S (LAN)            LAN 直连
+K60 (LAN)        ←→  Note 4X (LAN)           LAN 直连
+Note 7 (LAN)     ←→  MIX 2S (LAN)            LAN 直连
+Note 7 (LAN)     ←→  Note 4X (LAN)           LAN 直连
+MIX 2S (LAN)     ←→  Note 4X (LAN)           LAN 直连
+```
+
+> MIX 2S / Note 4X 无 Tailscale，通过 LAN IP 与 K60 / Note 7 通信。
 
 ## 自愈系统
 
@@ -406,13 +412,17 @@ Layer 5  交叉容灾    远期（待 OpenClaw nodes 配通）
 
 ### Cron 调度
 
-| 设备 | 脚本 | 频率 | 职责 |
+| 设备 | 脚本 | 频率 | 监控目标 |
 |---|---|---|---|
-| K60 | `~/healthcheck.sh` | */5 min | 监控 Note 7 → 自动重启 → 告警 |
-| K60 | `~/check-ip.sh` | */10 min | 出口 IP 漂移检测 → 告警 |
+| K60 | `~/healthcheck.sh` | */5 min | Note 7 (Tailscale) → 自愈重启 |
+| K60 | `~/check-ip.sh` | */10 min | 出口 IP 漂移 → 告警 |
 | K60 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
-| Note 7 | `~/healthcheck.sh` | */5 min | 监控 K60 → 自动重启 → 告警 |
+| Note 7 | `~/healthcheck.sh` | */5 min | K60 (Tailscale) → 自愈重启 |
 | Note 7 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
+| MIX 2S | `~/healthcheck.sh` | */5 min | K60 (LAN) → 仅记录 |
+| MIX 2S | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
+| Note 4X | `~/healthcheck.sh` | */5 min | K60 (LAN) → 仅记录 |
+| Note 4X | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
 
 ### 日志
 
