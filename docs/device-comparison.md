@@ -376,45 +376,242 @@ K60: llama.cpp + Qwen2.5-7B · Note7: 0.5B-1.5B 分类摘要。
 
 | | K60 | MIX 2S | Note 7 | Note 4X |
 |---|---|---|---|---|
-| SoC | 8+ Gen 1 (4nm) | 845 (10nm) | 660 (14nm) | 625 (14nm) |
-| RAM | 16GB LPDDR5 | 6GB LPDDR4x | 6GB LPDDR4X | 3GB LPDDR3 |
-| 存储 | 462GB UFS 3.1 | UFS 2.1 | 50GB eMMC | eMMC 5.1 |
-| 电池 | 5500mAh | 3400mAh | 4000mAh | 4100mAh |
+| **算力** | K60 (8+ Gen1) | MIX 2S (845) | Note 7 (660) | Note 4X (625) |
+| **内存** | K60 (16GB) | MIX 2S / Note 7 (6GB) | — | Note 4X (3GB) |
+| **系统版本** | K60 (A15) | MIX 2S / Note 7 (A10) | — | Note 4X (A7) |
+| **渠道完整度** | Note 4X (3 全活) | K60 (4 含 1 未绑) | MIX 2S / Note 7 (3 含 1 未绑) | — |
+| **网络冗余** | K60 (TS+热点) | MIX 2S / Note 7 (TS+LAN) | — | Note 4X (仅 LAN) |
+| **运维简易度** | MIX 2S / Note 7 (加固最少) | K60 (HyperOS 复杂) | Note 4X (无 root+无 TS) | — |
+| **稳定性** | Note 7 (四链路全验证) | K60 / MIX 2S | Note 4X (3GB 受限) | — |
 
-## B. 系统与网络
+**一句话总结：** K60 是全能旗舰主力，MIX 2S 是加固最简单的稳定副机，Note 7 是全流程验证的可靠中端，Note 4X 是 3GB 内存下三渠道全活的韧性标杆。机队最大运维痛点不是单机稳定性，而是 **QQ 白名单四台联动**——宽带重拨一次需同时更新四个 AppID。
 
-| | K60 | MIX 2S | Note 7 | Note 4X |
-|---|---|---|---|---|
-| Android | 15 / HyperOS | 10 / MIUI 12.5 | 10 / MIUI 12.5 | 7.0 / MIUI 11 |
-| Tailscale | 100.118.60.29 | 100.104.72.125 | 100.91.94.44 | ❌ |
-| LAN IP | 192.168.1.23 | 192.168.1.20 | 192.168.122.238 | 192.168.1.19 |
-| SSH 互信 | ↔ Note 7 | ❌ | ↔ K60 | ❌ |
-| crond 监控 | ✅ | ❌ | ✅ | ❌ |
+---
 
-## C. 软件与升级
+## 十一、K60 技能清单
 
-| | K60 | MIX 2S | Note 7 | Note 4X |
-|---|---|---|---|---|
-| Node | 24.17.0 LTS | 26.4.0 | 26.4.0 | 26.4.0 deb |
-| libsqlite | 3.53.3 | 3.53.3 | 3.53.3 | 3.53.0 |
-| Python | 3.14+numpy | — | 3.14 | — |
-| cronie | ✅ | — | ✅ | — |
-| NODE_OPTIONS | `max-old=4096 semi=128` | 默认 | 默认 | 默认 |
-| 升级风险 | 🟢 | 🟡 | 🟡 | 🔴 |
+> 统计时间：2026-07-23 | 总计 106 个技能，63 个就绪，11 个待配置，32 个已禁用
+>
+> 安装命令：`openclaw skills install <slug>` | 搜索：`openclaw skills search <关键词>`
 
-## D. 运维命令
+### 11.1 金融投资（29 个）
 
-| 操作 | 命令 |
-|---|---|
-| 服务状态 | `sv status openclaw` (先 `export SVDIR=$PREFIX/var/service`) |
-| Gateway 探活 | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:18789/` |
-| 查出口 IP | `curl -4 -s https://api.ip.sb/ip` |
-| 健康检查日志 | `cat ~/healthcheck.log` |
-| IP 漂移日志 | `cat ~/check-ip.log` (K60) / `cat ~/.last_ip` |
-| 定时任务 | `crontab -l` |
-| 版本三连 | `openclaw --version` / `node --version` / SQLite 版本 |
-| 重启 | `sv restart openclaw` |
-| 日志 | `$PREFIX/var/log/sv/openclaw/current` |
-| K60→Note7 | `ssh -p 8022 u0_a171@100.91.94.44` |
-| Note7→K60 | `ssh -p 8022 u0_a129@100.118.60.29` |
-| 升级流程 | ① K60 → ② MIX 2S → ③ Note 7 → ④ Note 4X |
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `stock-research-engine` | 个股基本面深度研究（A股/港股/美股），买方基金经理视角 | ✅ |
+| `financial-roe-analysis` | 杜邦分析体系深度财务分析，拆解 ROE 驱动因素 | ✅ |
+| `a-share-risk-alert` | A股风险预警 / ST 预警 / 退市风险排查 | ✅ |
+| `stock-cyq-analyzer` | 筹码分布分析（CYQ），获利盘/主力成本/筹码集中度 | ✅ |
+| `stock-monitor` | 股票实时行情监控 + 价格/涨跌幅预警 | ✅ |
+| `stock-performance-express` | A股业绩快报查询（营收/净利润/EPS/ROE） | ✅ |
+| `股票价值投资分析` | 护城河分析 + DCF 估值 + 管理层评估 + 行业分析 | ✅ |
+| `finance-radar` | 美股 + 加密货币分析，8 维度评分 + 热门扫描 | ✅ |
+| `fund-analyzer` | 基金净值/收益/风险分析 + 持仓回测 + 同类对比 | ✅ |
+| `基金实时估值抓取` | 基于重仓股实时行情加权计算基金预计涨跌幅 | ✅ |
+| `hithink-finance` | 同花顺金融数据：A股行情/财报/指数/板块/基金 | ✅ |
+| `investlog-ai` | 美股实时数据：估值/财报/分析师/内幕交易/机构持仓 | ✅ |
+| `stocks` | Yahoo Finance 56+ 金融数据工具 | ✅ |
+| `cn-financial-scraper` | 1330 家中国金融机构全量爬取 + 反爬增强 | ✅ |
+| `pytdx-api` | 通达信 pytdx：A股/期货 K线/分时/财务/板块数据 | ✅ |
+| `sec-finance-ai` | 美股 SEC EDGAR 数据库：10-K/10-Q/8-K/内幕交易 | ✅ |
+| `position-risk-manager` | 仓位管理/移动止盈/阶梯止盈/核心-卫星策略 | ✅ |
+| `fintech-risk-control` | 金融风控策略：决策树/分箱/评分卡/信用风险 | ✅ |
+| `backtester` | 策略回测框架：SMA/RSI/MACD/布林带 | ✅ |
+| `stock-strategy-backtester` | 股票策略回测（胜率/收益率/回撤/夏普比率） | ✅ |
+| `onequant-backtest` | OneQuant 4.0 量化平台：102 API + 回测 + 选股 | ✅ |
+| `joinquant` | 聚宽量化交易平台：数据查询 + 策略回测 + 模拟实盘 | ✅ |
+| `quant-risk-dashboard` | 量化风控仪表板：VaR/CVaR/压力测试/头寸限制 | ✅ |
+| `taoguba-crawler` | 淘股吧博客爬取，获取股市见解 | ✅ |
+| `industry-research-analyst` | 投行级行业深度研究：产业链/竞争格局/驱动因素 | ✅ |
+| `私募` | 15 年经验私募合规专家，8 大模块审查 + Word 报告 | ✅ |
+| `ai-stock-analyst` | AI A股分析师（AkShare 实时数据 + 评分报告） | 🔧 待配置 |
+| `finance-research-report` | A股每周投研 PDF 报告生成器 | 🔧 待配置 |
+| `quant-strategy` | 量化策略编写回测 + 因子分析 | 🔧 待配置 |
+
+### 11.2 数据分析（9 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `data-analyst-pro` | 10 大场景数据诊断，六阶分析 + 快慢车道，直接出结论和图表 | ✅ |
+| `auto-data-analysis-claw` | 自动化财务与业务数据分析，生成专业报表 | ✅ |
+| `data-visualization` | 智能数据可视化：柱状/折线/饼图/热力图/旭日图等 11 种图表 | ✅ |
+| `smart-charts` | 读取 CSV/Excel/JSON，自动推荐最佳图表，生成交互式 ECharts | ✅ |
+| `chat2duckdb` | DuckDB 引擎：对 CSV/JSON/Parquet/Excel 执行 SQL 分析 | ✅ |
+| `data-tag` | 数据标注校验：自动校验结果列，错误标红、不确定标黄 | ✅ |
+| `budget-vs-actual` | 预算 vs 实际差异分析，生成管理评述和滚动预测 | ✅ |
+| `Business Intelligence` | BI 仪表板/KPI 定义/决策报告 | 🔧 待配置 |
+| `riskofficer` | 组合风险管理：VaR/蒙特卡洛/压力测试/风险平价 | 🔧 待配置 |
+
+### 11.3 商业查询（2 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `business-search` | 天机商查：工商/股东/司法/知识产权/ICP 备案等全维度企业情报 | ✅ |
+| `bainiu-enterprise-data-query` | 白牛企业信息查询：工商/股权/司法/行政/知识产权/关系图谱 | ✅ |
+
+### 11.4 渠道运营：QQ + 飞书（7 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `qqbot-channel` | QQ 频道管理：成员/频道/发言管理，写操作前确认 | ✅ |
+| `qqbot-media` | QQ 机器人富媒体收发：图片/语音/视频 | ✅ |
+| `qqbot-remind` | QQ 机器人定时提醒：一次性/周期提醒，支持增删查 | ✅ |
+| `feishu-doc` | 飞书文档读写操作 | ✅ |
+| `feishu-drive` | 飞书云盘文件管理 | ✅ |
+| `feishu-perm` | 飞书文档/文件权限管理 | ✅ |
+| `feishu-wiki` | 飞书知识库导航与查询 | ✅ |
+
+### 11.5 内容与媒体（7 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `wechat-article` | 微信公众号文章抓取，支持 Markdown/HTML/Text/JSON/Excel 五种格式 | ✅ |
+| `wxpublic-fetch` | 指定公众号 + 日期范围批量抓取文章存为本地 Markdown | ✅ |
+| `wechat-hot-article-extractor` | 提取微信 10w+ 热门文章（近期时间窗口） | ✅ |
+| `wechat-top-account` | 公众号综合实力排行榜 TOP50（日/周/月榜 + 垂直领域筛选） | ✅ |
+| `wechat-analyzer` | 微信聊天记录分析 Web 应用（Flask + 暗色主题） | ✅ |
+| `douyin-content-surge` | 抖音每日点赞飙升榜 TOP50（按赛道/历史回溯） | ✅ |
+| `meme-maker` | 搜索 meme 模板 + 生成表情包图片 | ✅ |
+
+### 11.6 开发工具（4 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `spike` | 快速原型验证：可行性评估 + 方案对比报告 | ✅ |
+| `skill-creator` | 创建/编辑/审核/校验 AgentSkill 和 SKILL.md | ✅ |
+| `clawhub` | ClawHub 技能仓库：搜索/安装/更新/发布/同步 | ✅ |
+| `diagram-maker` | 生成 SVG/HTML 或 Excalidraw 图表（架构图/流程图/白板） | ✅ |
+| `node-inspect-debugger` | Node.js 调试：断点/CDP/堆内存/CPU 性能分析 | ✅ |
+| `python-debugpy` | Python 调试：pdb/breakpoint/远程 debugpy 连接 | ✅ |
+
+### 11.7 系统与运维（4 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `healthcheck` | 主机安全审计：SSH/防火墙/更新/暴露面/备份/磁盘加密 | ✅ |
+| `node-connect` | OpenClaw 节点配对诊断（Android/iOS/macOS） | ✅ |
+| `taskflow` | 多步骤分离任务协调，持久化状态 + 子任务管理 | ✅ |
+| `find-skill-skillhub` | SkillHub 平台技能搜索（关键词 + 标签筛选） | ✅ |
+
+### 11.8 效率与生活（3 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `weather` | 天气查询（当前 + 预报），支持位置/降雨/温度/旅行规划 | ✅ |
+| `notion` | Notion CLI/API：页面/Markdown/数据源/文件/评论/搜索 | ✅ |
+| `周公解梦` | 传统周公解梦 + 现代心理学双语解梦，双版本解读 + 吉凶建议 | ✅ |
+
+### 11.9 技能来源分布
+
+| 来源 | 数量 | 说明 |
+|---|---|---|
+| `openclaw-workspace` | 49 | 用户手动安装的工作区技能（`~/.openclaw/workspace/skills/`） |
+| `openclaw-bundled` | 9 (就绪) + 28 (禁用) | OpenClaw 内置技能，平台不适用的默认禁用 |
+| `openclaw-extra` | 7 | OpenClaw 扩展技能包：QQ/飞书渠道管理 |
+
+### 11.10 快速导入其他设备
+
+```bash
+# 从 K60 导出已安装技能列表
+openclaw skills list --json > /tmp/k60-skills.json
+
+# 在其他设备上批量安装（筛选 workspace 来源的）
+# 方式一：逐个安装
+openclaw skills install <skill-slug>
+
+# 方式二：通过 git 同步 workspace skills 目录
+scp -r k60:~/.openclaw/workspace/skills/ target:~/.openclaw/workspace/skills/
+
+# 方式三：SkillHub 搜索安装
+openclaw skills search <关键词>
+openclaw skills install <slug>
+```
+
+> **注意：** Note 7（SD660）安装大量技能后首次加载会慢（40-60s 冷启动），建议只安装常用技能。Note 4X（3GB RAM）禁止同时安装超过 10 个 workspace 技能以免 OOM。
+
+---
+
+## 十二、自愈系统
+
+> 部署时间：2026-07-23 | 设计原则：**检测 → 修复 → 修复无效才告警**
+
+### 12.1 架构分层
+
+```
+Layer 1  进程守护    runit (15s 自动拉起 gateway)
+Layer 2  异常感知    互检探活 + IP 漂移 + 本地自检
+Layer 3  自动修复    ★ 新增：远程重启 + 重试 + 冷却机制
+Layer 4  预防保护    ★ 新增：内存/磁盘/swap 阈值自动清理
+Layer 5  交叉容灾    远期（待 OpenClaw nodes 配通）
+```
+
+### 12.2 互检自愈（K60 ↔ Note 7）
+
+每 5 分钟执行，通过 SSH 互信远程检查对方 gateway HTTP 状态：
+
+```
+检测 HTTP 200？
+  ├─ 是 → 静默退出
+  └─ 否
+      ├─ SSH 不通？ → 对方可能关机，立即告警
+      ├─ 10 分钟内重启过？ → 冷却期，跳过
+      └─ 自愈循环（最多 2 次）
+           ├─ ssh 远程 sv restart openclaw
+           ├─ 等 20s 重新探活
+           ├─ HTTP 200 恢复 → 记录日志，静默退出
+           └─ 2 次后仍失败 → QQ 告警「自愈失败，需人工介入」
+```
+
+**关键设计：**
+- **冷却期 10 分钟**：防止 gateway 反复崩溃时频繁重启
+- **SSH 不可达即告警**：设备离线无法自愈，不浪费时间重试
+- **只报警不静默**：自愈失败会带诊断信息（当前 HTTP 状态码）
+
+### 12.3 本地自检（各设备独立）
+
+每 10 分钟执行，不依赖网络：
+
+| 检测项 | 阈值 | 动作 | 是否告警 |
+|---|---|---|---|
+| 磁盘使用率 | > 90% | 截断大日志 + 清理 3 天前旧日志 + npm cache clean | 否（记日志） |
+| 可用内存 | < 500MB | 截断日志 + sync + drop_caches → 仍不足则重启 gateway | 否（记日志） |
+| Swap 使用率 | > 80% | 无法主动释放，发告警提醒关注 | ✅ QQ 告警 |
+| Gateway 自检 | HTTP ≠ 200 | 只记录，由对端 healthcheck 处理（避免重复操作） | 否 |
+
+**为什么 swap 只告警不修复：** Android 内核不支持主动释放 swap，只能等系统自然回收或重启 gateway。
+
+### 12.4 Cron 调度一览
+
+| 设备 | 脚本 | 频率 | 职责 |
+|---|---|---|---|
+| K60 | `~/healthcheck.sh` | */5 min | 监控 Note 7 → 自动重启 → 告警 |
+| K60 | `~/check-ip.sh` | */10 min | 出口 IP 漂移检测 → 告警 |
+| K60 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
+| Note 7 | `~/healthcheck.sh` | */5 min | 监控 K60 → 自动重启 → 告警 |
+| Note 7 | `~/self-check.sh` | */10 min | 本地内存/磁盘/swap/自检 |
+
+### 12.5 脚本位置
+
+```
+GitHub: openclaw-termux-deploy/scripts/
+├── k60-healthcheck.sh      # K60 自愈互检脚本
+├── note7-healthcheck.sh    # Note 7 自愈互检脚本
+├── self-check.sh           # 通用本地自检脚本（两台同版）
+└── check-ip.sh             # IP 漂移检测（K60 专属）
+```
+
+### 12.6 日志与排查
+
+```bash
+# 查看自愈操作记录
+cat ~/healthcheck.log        # 互检自愈日志（重启/告警）
+cat ~/self-check.log         # 本地自检日志（清理动作）
+cat ~/self-check.alert.log   # 本地自检告警（swap 超阈值等）
+cat ~/check-ip.log           # IP 漂移记录
+
+# 查看上次自愈重启时间
+cat ~/healthcheck.last_restart
+
+# 手动触发一次互检（不会无故重启——只有 gateway 挂了才会）
+~/healthcheck.sh; echo "exit: $?"
+```
