@@ -94,6 +94,8 @@ chmod +x openclaw-deploy
 ```
 
 > 📸 **截图位置：** 终端全屏截图，展示彩色 TUI 主菜单
+> <img width="799" height="896" alt="b5d251fe765f24a885f7a8ec9cddac1c" src="https://github.com/user-attachments/assets/3b800e3b-53d7-4e9e-b284-8e63fdfa7eb0" />
+
 
 ### 机队仪表盘
 
@@ -122,6 +124,8 @@ chmod +x openclaw-deploy
 按 `r` 刷新，按 `0` 返回主菜单。
 
 > 📸 **截图位置：** 仪表盘全屏截图，展示 K60 和 Note 7 在线数据
+> <img width="866" height="781" alt="2c14c6ced894b29d7e7ba916c8b4f9b4" src="https://github.com/user-attachments/assets/e826186e-0f75-42df-9462-ad0e119e7ad0" />
+
 
 ### 新手部署向导
 
@@ -148,6 +152,8 @@ chmod +x openclaw-deploy
 - **远程部署**：从 PC 通过 SSH 部署到目标手机
 
 > 📸 **截图位置：** 向导页面，展示 6 个步骤指示器
+> <img width="697" height="593" alt="37b456c5d770772e2dc8c242732725f7" src="https://github.com/user-attachments/assets/2ccbb4c6-d7af-4ff6-b0ab-49b36db9e226" />
+
 
 ### 帮助与速查
 
