@@ -1,4 +1,4 @@
-# OpenClaw Deploy — 使用指南
+# OpenClaw Deploy — 工具箱使用指南
 
 > **OpenClaw Termux 机队管理工具箱** · 让安卓手机变成 24/7 AI 机器人服务器
 >
