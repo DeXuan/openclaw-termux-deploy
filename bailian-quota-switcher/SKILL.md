@@ -9,7 +9,7 @@ description: >
 
 # 百炼免费模型额度自动切换 v2.2
 
-> 完整文档见 [README.md](README.md) | 版本记录见 README §12 | 踩坑见 [references/pitfalls.md](references/pitfalls.md)
+> 完整文档见 [README.md](README.md) | 版本记录见 README §12 | 踩坑见 [README.md §踩坑速查](README.md#踩坑速查16-条)
 
 基于 **两天四机（K60/MIX2S/Note7/Note4X）实战打磨**。每台安卓手机配一组百炼免费大语言模型（各 100 万 token 独立额度），watcher 守护进程监控日志中的 403 错误，自动 re-auth + 切换到下一个模型。
 
@@ -153,7 +153,7 @@ Note4X → qwen3.7-plus     (1,000,000)
 
 ## 已知问题
 
-详见 [references/pitfalls.md](references/pitfalls.md)（16 条）。
+详见 [README.md §踩坑速查](README.md#踩坑速查16-条)（16 条）。
 
 **核心坑**：403 导致 auth profile 全局失效。OpenClaw 把单个模型的 403 误判为 provider 级 auth 失败，使所有 fallback 模型报 "Couldn't sign in"。Watcher 通过 re-auth 绕过。
 

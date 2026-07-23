@@ -1,4 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/sh
+# Canonical: scripts/phone_check_env.sh — sync from there
 # 机型环境体检（手机 Termux 侧执行，只读不改，幂等）
 # 用法: cat phone_check_env.sh | ssh -p 8022 user@<IP> 'sh -'
 # 输出各项 [PASS]/[FAIL]/[SKIP]，FAIL 项附坑号与修复命令
