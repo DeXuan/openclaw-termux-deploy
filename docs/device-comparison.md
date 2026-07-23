@@ -212,3 +212,146 @@ openclaw agent --agent main --message "只回复OK"  # 各机本地执行
 | **稳定性** | Note 7 (四链路全验证) | K60 / MIX 2S | Note 4X (3GB 受限) | — |
 
 **一句话总结：** K60 是全能旗舰主力，MIX 2S 是加固最简单的稳定副机，Note 7 是全流程验证的可靠中端，Note 4X 是 3GB 内存下三渠道全活的韧性标杆。机队最大运维痛点不是单机稳定性，而是 **QQ 白名单四台联动**——宽带重拨一次需同时更新四个 AppID。
+
+---
+
+## 十一、K60 技能清单
+
+> 统计时间：2026-07-23 | 总计 106 个技能，63 个就绪，11 个待配置，32 个已禁用
+>
+> 安装命令：`openclaw skills install <slug>` | 搜索：`openclaw skills search <关键词>`
+
+### 11.1 金融投资（29 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `stock-research-engine` | 个股基本面深度研究（A股/港股/美股），买方基金经理视角 | ✅ |
+| `financial-roe-analysis` | 杜邦分析体系深度财务分析，拆解 ROE 驱动因素 | ✅ |
+| `a-share-risk-alert` | A股风险预警 / ST 预警 / 退市风险排查 | ✅ |
+| `stock-cyq-analyzer` | 筹码分布分析（CYQ），获利盘/主力成本/筹码集中度 | ✅ |
+| `stock-monitor` | 股票实时行情监控 + 价格/涨跌幅预警 | ✅ |
+| `stock-performance-express` | A股业绩快报查询（营收/净利润/EPS/ROE） | ✅ |
+| `股票价值投资分析` | 护城河分析 + DCF 估值 + 管理层评估 + 行业分析 | ✅ |
+| `finance-radar` | 美股 + 加密货币分析，8 维度评分 + 热门扫描 | ✅ |
+| `fund-analyzer` | 基金净值/收益/风险分析 + 持仓回测 + 同类对比 | ✅ |
+| `基金实时估值抓取` | 基于重仓股实时行情加权计算基金预计涨跌幅 | ✅ |
+| `hithink-finance` | 同花顺金融数据：A股行情/财报/指数/板块/基金 | ✅ |
+| `investlog-ai` | 美股实时数据：估值/财报/分析师/内幕交易/机构持仓 | ✅ |
+| `stocks` | Yahoo Finance 56+ 金融数据工具 | ✅ |
+| `cn-financial-scraper` | 1330 家中国金融机构全量爬取 + 反爬增强 | ✅ |
+| `pytdx-api` | 通达信 pytdx：A股/期货 K线/分时/财务/板块数据 | ✅ |
+| `sec-finance-ai` | 美股 SEC EDGAR 数据库：10-K/10-Q/8-K/内幕交易 | ✅ |
+| `position-risk-manager` | 仓位管理/移动止盈/阶梯止盈/核心-卫星策略 | ✅ |
+| `fintech-risk-control` | 金融风控策略：决策树/分箱/评分卡/信用风险 | ✅ |
+| `backtester` | 策略回测框架：SMA/RSI/MACD/布林带 | ✅ |
+| `stock-strategy-backtester` | 股票策略回测（胜率/收益率/回撤/夏普比率） | ✅ |
+| `onequant-backtest` | OneQuant 4.0 量化平台：102 API + 回测 + 选股 | ✅ |
+| `joinquant` | 聚宽量化交易平台：数据查询 + 策略回测 + 模拟实盘 | ✅ |
+| `quant-risk-dashboard` | 量化风控仪表板：VaR/CVaR/压力测试/头寸限制 | ✅ |
+| `taoguba-crawler` | 淘股吧博客爬取，获取股市见解 | ✅ |
+| `industry-research-analyst` | 投行级行业深度研究：产业链/竞争格局/驱动因素 | ✅ |
+| `私募` | 15 年经验私募合规专家，8 大模块审查 + Word 报告 | ✅ |
+| `ai-stock-analyst` | AI A股分析师（AkShare 实时数据 + 评分报告） | 🔧 待配置 |
+| `finance-research-report` | A股每周投研 PDF 报告生成器 | 🔧 待配置 |
+| `quant-strategy` | 量化策略编写回测 + 因子分析 | 🔧 待配置 |
+
+### 11.2 数据分析（9 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `data-analyst-pro` | 10 大场景数据诊断，六阶分析 + 快慢车道，直接出结论和图表 | ✅ |
+| `auto-data-analysis-claw` | 自动化财务与业务数据分析，生成专业报表 | ✅ |
+| `data-visualization` | 智能数据可视化：柱状/折线/饼图/热力图/旭日图等 11 种图表 | ✅ |
+| `smart-charts` | 读取 CSV/Excel/JSON，自动推荐最佳图表，生成交互式 ECharts | ✅ |
+| `chat2duckdb` | DuckDB 引擎：对 CSV/JSON/Parquet/Excel 执行 SQL 分析 | ✅ |
+| `data-tag` | 数据标注校验：自动校验结果列，错误标红、不确定标黄 | ✅ |
+| `budget-vs-actual` | 预算 vs 实际差异分析，生成管理评述和滚动预测 | ✅ |
+| `Business Intelligence` | BI 仪表板/KPI 定义/决策报告 | 🔧 待配置 |
+| `riskofficer` | 组合风险管理：VaR/蒙特卡洛/压力测试/风险平价 | 🔧 待配置 |
+
+### 11.3 商业查询（2 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `business-search` | 天机商查：工商/股东/司法/知识产权/ICP 备案等全维度企业情报 | ✅ |
+| `bainiu-enterprise-data-query` | 白牛企业信息查询：工商/股权/司法/行政/知识产权/关系图谱 | ✅ |
+
+### 11.4 渠道运营：QQ + 飞书（7 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `qqbot-channel` | QQ 频道管理：成员/频道/发言管理，写操作前确认 | ✅ |
+| `qqbot-media` | QQ 机器人富媒体收发：图片/语音/视频 | ✅ |
+| `qqbot-remind` | QQ 机器人定时提醒：一次性/周期提醒，支持增删查 | ✅ |
+| `feishu-doc` | 飞书文档读写操作 | ✅ |
+| `feishu-drive` | 飞书云盘文件管理 | ✅ |
+| `feishu-perm` | 飞书文档/文件权限管理 | ✅ |
+| `feishu-wiki` | 飞书知识库导航与查询 | ✅ |
+
+### 11.5 内容与媒体（7 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `wechat-article` | 微信公众号文章抓取，支持 Markdown/HTML/Text/JSON/Excel 五种格式 | ✅ |
+| `wxpublic-fetch` | 指定公众号 + 日期范围批量抓取文章存为本地 Markdown | ✅ |
+| `wechat-hot-article-extractor` | 提取微信 10w+ 热门文章（近期时间窗口） | ✅ |
+| `wechat-top-account` | 公众号综合实力排行榜 TOP50（日/周/月榜 + 垂直领域筛选） | ✅ |
+| `wechat-analyzer` | 微信聊天记录分析 Web 应用（Flask + 暗色主题） | ✅ |
+| `douyin-content-surge` | 抖音每日点赞飙升榜 TOP50（按赛道/历史回溯） | ✅ |
+| `meme-maker` | 搜索 meme 模板 + 生成表情包图片 | ✅ |
+
+### 11.6 开发工具（4 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `spike` | 快速原型验证：可行性评估 + 方案对比报告 | ✅ |
+| `skill-creator` | 创建/编辑/审核/校验 AgentSkill 和 SKILL.md | ✅ |
+| `clawhub` | ClawHub 技能仓库：搜索/安装/更新/发布/同步 | ✅ |
+| `diagram-maker` | 生成 SVG/HTML 或 Excalidraw 图表（架构图/流程图/白板） | ✅ |
+| `node-inspect-debugger` | Node.js 调试：断点/CDP/堆内存/CPU 性能分析 | ✅ |
+| `python-debugpy` | Python 调试：pdb/breakpoint/远程 debugpy 连接 | ✅ |
+
+### 11.7 系统与运维（4 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `healthcheck` | 主机安全审计：SSH/防火墙/更新/暴露面/备份/磁盘加密 | ✅ |
+| `node-connect` | OpenClaw 节点配对诊断（Android/iOS/macOS） | ✅ |
+| `taskflow` | 多步骤分离任务协调，持久化状态 + 子任务管理 | ✅ |
+| `find-skill-skillhub` | SkillHub 平台技能搜索（关键词 + 标签筛选） | ✅ |
+
+### 11.8 效率与生活（3 个）
+
+| 技能 | 一句话能力 | 状态 |
+|---|---|---|
+| `weather` | 天气查询（当前 + 预报），支持位置/降雨/温度/旅行规划 | ✅ |
+| `notion` | Notion CLI/API：页面/Markdown/数据源/文件/评论/搜索 | ✅ |
+| `周公解梦` | 传统周公解梦 + 现代心理学双语解梦，双版本解读 + 吉凶建议 | ✅ |
+
+### 11.9 技能来源分布
+
+| 来源 | 数量 | 说明 |
+|---|---|---|
+| `openclaw-workspace` | 49 | 用户手动安装的工作区技能（`~/.openclaw/workspace/skills/`） |
+| `openclaw-bundled` | 9 (就绪) + 28 (禁用) | OpenClaw 内置技能，平台不适用的默认禁用 |
+| `openclaw-extra` | 7 | OpenClaw 扩展技能包：QQ/飞书渠道管理 |
+
+### 11.10 快速导入其他设备
+
+```bash
+# 从 K60 导出已安装技能列表
+openclaw skills list --json > /tmp/k60-skills.json
+
+# 在其他设备上批量安装（筛选 workspace 来源的）
+# 方式一：逐个安装
+openclaw skills install <skill-slug>
+
+# 方式二：通过 git 同步 workspace skills 目录
+scp -r k60:~/.openclaw/workspace/skills/ target:~/.openclaw/workspace/skills/
+
+# 方式三：SkillHub 搜索安装
+openclaw skills search <关键词>
+openclaw skills install <slug>
+```
+
+> **注意：** Note 7（SD660）安装大量技能后首次加载会慢（40-60s 冷启动），建议只安装常用技能。Note 4X（3GB RAM）禁止同时安装超过 10 个 workspace 技能以免 OOM。
