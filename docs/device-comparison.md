@@ -1,6 +1,8 @@
 # OpenClaw 安卓手机机队
 
 > 最后更新：2026-07-23 | 全队定版：OpenClaw 2026.7.1-2
+>
+> **本次更新：** K60 深度分析、渠道/角色数据刷新、新增各设备独立章节、ClawChat 全队废弃
 
 ## 机队概览
 
@@ -199,7 +201,9 @@ Python 3.14.6 (3 包) | git 2.55.0 | cronie | 缺: termux-api, vim/nano
 | 全链路自动恢复验证通过 | Node 26.4.0 升级风险 |
 | SSH 互信 + crond 监控 ✅ | — |
 
----
+# 版本管理: Git 仓库 (推荐)
+cd ~/.openclaw/workspace/skills && git init && git push  # 其他设备 git pull
+```
 
 ## MIX 2S — 待重新定位
 
