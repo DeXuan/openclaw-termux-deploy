@@ -8,11 +8,15 @@ Thumbs.db
 *~
 .vscode/
 
+# Claude Code (local config)
+.claude/
+
 # Termux temp
 *.log
 *.bak
 healthcheck.last_restart
 
-# Shell
+# Archive
 *.tar.gz
 *.zip
+*.skill
