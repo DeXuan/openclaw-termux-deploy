@@ -12,13 +12,13 @@
 |---|---|---|---|---|---|---|
 | **K60** | mondrian | 8+ Gen 1 | 16GB | A15 | 🥇 随身主力 | QQ + 飞书 + 微信 |
 | **Note 7** | lavender | 660 | 6GB | A10 | 🥈 家里轻量 | QQ + 飞书 |
-| **MIX 2S** | polaris | 845 | 6GB | A10 | 🔍 待定位 | QQ + 飞书 |
-| **Note 4X** | mido | 625 | 3GB | A7 | 🏅 长期备机 | QQ + 飞书 + 微信(待移除) |
+| **MIX 2S** | polaris | 845 | 6GB | A10 | 🥉 稳定副机 | QQ + 飞书 |
+| **Note 4X** | mido | 625 | 3GB | A7 | 🏅 韧性备机 | QQ + 飞书 + 微信(待移除) |
 
 ```
 网络: 家庭宽带(出口 117.186.4.220) + Tailscale 组网
-K60 ↔ Note 7  SSH 互信 ✅  crond 健康监控 ✅  IP 漂移告警 ✅
-ClawChat 全队废弃 · QQ 白名单四台联动
+K60 ↔ Note 7  SSH 互信 ✅  crond 自愈监控 ✅  IP 漂移告警 ✅
+四台全在线  ·  MIX 2S / Note 4X 待部署 crond  ClawChat 全队废弃
 ```
 
 ---
@@ -212,32 +212,144 @@ Python 3.14.6 (3 包) | git 2.55.0 | cronie | 缺: termux-api, vim/nano
 | 全链路自动恢复验证通过 | Node 26.4.0 升级风险 |
 | SSH 互信 + crond 监控 ✅ | — |
 
-## MIX 2S — 待重新定位
+## MIX 2S — 稳定副机
 
-> 离线中。上线后按此模板全面分析 + 部署监控。
+### 硬件
 
-| 项目 | 数值 |
+| 项目 | 参数 |
 |---|---|
-| SoC | 骁龙 845 / 6GB |
-| 系统 | Android 10 / MIUI 12.5.1 |
-| Tailscale | 100.104.72.125 |
-| 渠道 | QQ (1903080675) + 飞书 + 微信 iLink (已装未绑) |
-| 待办 | 全面分析、移除微信、技能盘点、SSH 互信、部署 crond 监控 |
+| SoC / RAM / 存储 | 骁龙 845 (10nm) / 6GB LPDDR4x / 111GB UFS 2.1 |
+| 电池 | 3400mAh，支持 18W 有线 + 7.5W 无线 |
+| 系统 | Android 10 / MIUI 12.5.1（EOL 2020/12，全队加固最简单） |
+| 特殊 | 后置指纹、无耳机孔、陶瓷后盖 (189g) |
+
+### 运行状态 (2026-07-23)
+
+```
+CPU:  load 0.05 (极低)       内存: 5.5GB 总 / 3.1GB 可用
+Swap: 2.5GB 总 / 619MB 用    gateway: RSS 357MB
+磁盘: 18GB 已用 (17%) / 93GB 空闲
+```
+
+### 软件栈
+
+```
+OpenClaw 2026.7.1-2 | Node v26.4.0 | libsqlite 3.53.3
+Python 3.14.6 | git 2.55.0 | 缺: cronie, termux-api
+```
+
+### 网络
+
+| 路径 | 地址 | 说明 |
+|---|---|---|
+| WiFi | 192.168.1.20 | LAN 直连 |
+| Tailscale | ❌ 未检测到 | 之前记录 100.104.72.125，需重装 |
+| MAC | ⚠️ 随机 MAC | AE:1A:3A:F6:F9:0C，路由器需重绑 |
+
+### 渠道 & 模型
+
+| 项目 | 状态 |
+|---|---|
+| QQ | ✅ AppID 1903080675 |
+| 飞书 | ✅ cli_aad1a7849078dd01 |
+| 微信 iLink | 已装未绑 |
+| 模型供应商 | ⚠️ 未明确配置（providers 为空） |
+| plugins.allow | qqbot, deepseek, feishu, openclaw-weixin |
+
+### 🔴 待处理
+
+- **模型供应商未配置**：需 `openclaw onboard` 配置 DeepSeek API Key
+- **无 crond 监控**：`pkg install cronie` + 部署 healthcheck + self-check
+- **Tailscale 缺失**：之前有 TS IP 现在未检测到，需重装
+- **0 技能**：workspace 和 .agents 均为空，需从 K60 rsync
+- **wlan0 无 IP**：当前通过其他接口通信，需排查
+- **微信 iLink**：已装未绑，如需用则扫码绑定，否则移除以精简
+
+### 诊断
+
+| 🟢 优势 | 🟡 待优化 |
+|---|---|
+| A10 天然免疫 phantom killer | 模型配置缺失 |
+| 加固最简单（仅 Doze） | cronie + 自愈未部署 |
+| 845 性能稳定，load 仅 0.05 | Tailscale 失联 |
+| 双渠道 QQ+飞书在线 | 0 技能待同步 |
+| 磁盘 17% 余量大 | 微信未绑待决策 |
 
 ---
 
-## Note 4X — 长期备机
+## Note 4X — 韧性备机
 
-> 离线中。上线后移除微信 + 全面分析。
+### 硬件
 
-| 项目 | 数值 |
+| 项目 | 参数 |
 |---|---|
-| SoC | 骁龙 625 / 3GB (禁并发 CLI) |
-| 系统 | Android 7.0 / MIUI 11 |
-| Tailscale | ❌ 不支持 (A7) |
-| Node | 26.4.0 手动 deb + apt-mark hold |
-| libsqlite | 3.53.0（全队最低） |
-| 渠道 | QQ (1905222557) + 飞书 + 微信 iLink (主号，待移除) |
+| SoC / RAM / 存储 | 骁龙 625 (14nm) / 3GB LPDDR3 / 23GB eMMC 5.1 |
+| 电池 | 4100mAh，支持 10W 有线 |
+| 系统 | Android 7.0 / MIUI 11（全队最老，EOL） |
+| 特殊 | 有耳机孔、红外、后置指纹、支持 microSD (全队唯一) |
+| 硬件问题 | ⚠️ 电源键不灵敏，已装 Power Button Tile (F-Droid) 通过磁贴重启 |
+
+### 运行状态 (2026-07-23)
+
+```
+CPU:  load 5.01 (高)           内存: 2.8GB 总 / 875MB 可用
+Swap: 1GB zram / 298MB 用      gateway: RSS 391MB
+磁盘: 12GB 已用 (52%) / 11GB 空闲
+```
+
+### 软件栈
+
+```
+OpenClaw 2026.7.1-2 | Node v26.4.0 (手动deb+hold) | libsqlite 3.53.0 (全队最低)
+Python 3.13.13 | git 2.53.0 | 缺: cronie
+```
+
+### 网络
+
+| 路径 | 地址 |
+|---|---|
+| WiFi | 192.168.1.19 (仅 LAN 直连) |
+| Tailscale | ❌ Android 7 不支持 |
+
+### 渠道 & 模型
+
+| 项目 | 状态 |
+|---|---|
+| QQ | ✅ AppID 1905222557 |
+| 飞书 | ✅ cli_aad19b0b53b89d24 |
+| 微信 iLink | ⚠️ 已装+绑定（占主号），待移除 |
+| 模型供应商 | qwen-portal / deepseek / alibaba-model-studio (3个) |
+| plugins.allow | feishu, openclaw-weixin, qqbot |
+
+### 🔴 禁止并发 CLI
+
+3GB RAM 下 `openclaw channels probe` 或 `models list` 必 OOM。禁止任何 `openclaw agent` / `channels probe` / `models list` 命令，仅用 `grep` 查日志。
+
+### ⚠️ 高负载分析
+
+Load 5.01 持续偏高，排查发现：
+- `openclaw-gateway` 占 1.3% CPU / 391MB RSS（正常）
+- `quota_watcher.sh` 自 Jul22 持续运行（可疑）
+- 整体 load 虚高但 CPU 实际空闲（SD625 弱核心的 load 统计偏差）
+
+> 建议 kill quota_watcher.sh，改为 crontab 定时触发。
+
+### 待处理
+
+- **移除微信 iLink**：已绑占主号，需 openclaw channels disable + 删配置
+- **无 crond 监控**：pkg install cronie + 部署 healthcheck + self-check
+- **SQLite 升级**：3.53.0 → 3.53.3 (pkg install --only-upgrade libsqlite)
+- **0 技能**：Note 4X 最多装 10 个轻量技能，避免 OOM
+
+### 诊断
+
+| 🟢 优势 | 🟡 待优化 |
+|---|---|
+| 唯一三渠道全活设备 | 微信待移除(占主号) |
+| 唯一 qwen-portal 供应商 | 高负载需排查 |
+| 4100mAh 大电池续航好 | cronie + 自愈未部署 |
+| 支持 microSD 扩展 | SQLite 3.53.0 需升级 |
+| 耳机孔/红外等复古优势 | 禁并发 CLI 操作受限 |
 
 ---
 
