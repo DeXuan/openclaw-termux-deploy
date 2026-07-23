@@ -199,8 +199,8 @@ DEVICES=(
 
 DEVICE_NAMES=("K60" "Note7" "MIX2S" "Note4X")
 DEVICE_EMOJI=("🔥" "🍃" "⚡" "🪨")
-DEVICE_LABELS=("随身主力机" "家里轻量机" "待重新定位" "长期备机")
-DEVICE_ROLES=("QQ+飞书+微信" "QQ+飞书" "QQ+飞书" "QQ+飞书+微信")
+DEVICE_LABELS=("随身主力机" "家里轻量机" "稳定副机" "韧性备机")
+DEVICE_ROLES=("QQ+飞书+微信" "QQ+飞书" "QQ+飞书" "QQ+飞书")
 
 # ═══ SSH ═══
 ssh_device() {
@@ -248,14 +248,15 @@ header() {
 
 # ═══ Fleet Status Bar ═══
 fleet_status_bar() {
-  local k60_status="$(ssh_device K60 'curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://127.0.0.1:18789/' 2>/dev/null || echo 'fail')"
-  local n7_status="$(ssh_device Note7 'curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://127.0.0.1:18789/' 2>/dev/null || echo 'fail')"
-
-  local k60_dot n7_dot
-  [ "$k60_status" = "200" ] && k60_dot="${C_GREEN}●${C_RESET}" || k60_dot="${C_RED}●${C_RESET}"
-  [ "$n7_status" = "200" ] && n7_dot="${C_GREEN}●${C_RESET}" || n7_dot="${C_RED}●${C_RESET}"
-
-  echo -e "  ${C_DIM}$(date '+%Y-%m-%d %H:%M')${C_RESET}    ${k60_dot} K60  ${n7_dot} N7  ${C_DIM}|${C_RESET}  $(get_device_name 2>/dev/null || echo 'PC')"
+  local dots=""
+  for dev in K60 Note7 MIX2S Note4X; do
+    local status
+    status=$(ssh_device "$dev" 'curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://127.0.0.1:18789/' 2>/dev/null) || status="fail"
+    if [ "$status" = "200" ]; then dots+="${C_GREEN}●${C_RESET} ${dev}  "
+    else dots+="${C_RED}○${C_RESET} ${dev}  "
+    fi
+  done
+  echo -e "  ${C_DIM}$(date '+%Y-%m-%d %H:%M')${C_RESET}    ${dots}${C_DIM}|${C_RESET}  $(get_device_name 2>/dev/null || echo 'PC')"
 }
 
 # ═══ Menu Item ═══
