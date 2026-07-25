@@ -65,9 +65,9 @@ def analyze(funds, prev):
         # 标记
         arrow = '↑' if chg > 0 else ('↓' if chg < 0 else '→')
         star = ' ●' if abs(chg) >= 3 else ''
-        if pnl > 0: face = '😊'
-        elif pnl > -10: face = '😐'
-        else: face = '😞'
+        if pnl > 0: face = '🟢'
+        elif pnl > -10: face = '🟡'
+        else: face = '🔴'
 
         # 紧凑行: ↑东吴移动互联 6.8239 -1.7% -12%😞 ●
         short_name = name[:7]
