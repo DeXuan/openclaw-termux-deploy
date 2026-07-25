@@ -67,6 +67,25 @@ else
   echo "[SKIP] openclaw 未安装"
 fi
 
+# ── 5b. shebang/env 陷阱检测（坑 25）──
+OCBIN=$(command -v openclaw 2>/dev/null)
+if [ -n "$OCBIN" ] && [ -L "$OCBIN" ]; then
+  OCTGT=$(ls -l "$OCBIN" 2>/dev/null | awk -F' -> ' '{print $2}')
+  if echo "$OCTGT" | grep -q '\.mjs$'; then
+    OCSHEBANG=$(head -1 "$OCBIN" 2>/dev/null)
+    if echo "$OCSHEBANG" | grep -q '#!/usr/bin/env'; then
+      if [ ! -x /usr/bin/env ]; then
+        echo "[FAIL] 坑25：openclaw 是 symlink→.mjs + shebang /usr/bin/env，但 Android 无 /usr/bin/env！"
+        echo "       SSH 交互正常但 runit exec 会报 not found。修复: phone_setup_service.sh（v2.6+ 自动处理）"
+      else
+        echo "[PASS] openclaw shebang + /usr/bin/env 均正常"
+      fi
+    fi
+  fi
+elif [ -n "$OCBIN" ] && [ -f "$OCBIN" ]; then
+  head -1 "$OCBIN" 2>/dev/null | grep -q 'bash' && echo "[PASS] openclaw 已是 bash wrapper（坑25 免疫）"
+fi
+
 # ── 6. 开机自启链 ──
 [ -x ~/.termux/boot/start-services.sh ] && echo "[PASS] boot 脚本存在" || echo "[FAIL] boot 脚本缺失（阶段 4 的 phone_setup_service.sh 会建）"
 BOOTPKG=$(pm list packages 2>/dev/null | grep -c com.termux.boot)

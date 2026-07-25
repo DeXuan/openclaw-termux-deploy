@@ -1,5 +1,15 @@
 #!/data/data/com.termux/files/usr/bin/sh
+# OpenClaw runit run 脚本模板
+# 自动部署请用 phone_setup_service.sh（含坑 25 shebang 修复），本文件仅作手动参考
 exec 2>&1
-# force IPv4 first: QQ bot IP whitelist only accepts IPv4
+# 坑14：QQ 等平台 IP 白名单只支持 IPv4，强制 Node 优先走 IPv4 出口
 export NODE_OPTIONS="--dns-result-order=ipv4first"
-exec /data/data/com.termux/files/home/.npm-global/bin/openclaw gateway
+
+# 坑25：不要直接 exec openclaw 命令（npm symlink → .mjs，shebang "#!/usr/bin/env node"
+# 在 Android/Termux 内核 exec 时找不到 /usr/bin/env → "not found"）
+# 必须显式调 node + .mjs 真实路径。常见路径：
+#   标准 Termux：/data/data/com.termux/files/usr/lib/node_modules/openclaw/openclaw.mjs
+#   K60（~/.npm-global）：$HOME/.npm-global/lib/node_modules/openclaw/openclaw.mjs
+# 不确定时：npm root -g → 拼接 /openclaw/openclaw.mjs
+
+exec /data/data/com.termux/files/usr/bin/node /data/data/com.termux/files/usr/lib/node_modules/openclaw/openclaw.mjs gateway

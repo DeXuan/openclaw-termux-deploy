@@ -389,6 +389,28 @@ DEVICES=(
 
 Note 7 的 crond 有时会在 OOM 后挂掉。工具箱菜单 [6] → [3] 可查看自愈状态，如有异常会显示红色离线 pill。
 
+### Q: runit 日志循环报 `openclaw: not found`，但 SSH 进去 `openclaw --version` 正常？
+
+这是 **shebang `/usr/bin/env` 陷阱**（[pitfalls.md](skill/references/pitfalls.md) 坑 25）。npm 全局安装的 `openclaw` 命令是 symlink → `.mjs` 文件，其 shebang `#!/usr/bin/env node` 在 Android 内核 exec 时找不到 `/usr/bin/env`（Termux 的 `env` 在 `$PREFIX/bin/env`）。但交互 shell 会自行处理 shebang，所以人工测试正常——极具迷惑性。
+
+**快速修复（单台）**：
+```bash
+# SSH 到手机执行
+sv down openclaw
+# 删除 npm symlink，替换为 bash wrapper
+OPENCLAW_BIN=$(command -v openclaw)
+NPM_ROOT=$(npm root -g)
+rm "$OPENCLAW_BIN"
+cat > "$OPENCLAW_BIN" <<EOF
+#!/data/data/com.termux/files/usr/bin/bash
+exec node $NPM_ROOT/openclaw/openclaw.mjs "\$@"
+EOF
+chmod +x "$OPENCLAW_BIN"
+sv up openclaw
+```
+
+**工具箱方式**：重新运行 `phone_setup_service.sh`（v2.6+ 已内置自动修复）。
+
 ### Q: 工具箱更新了怎么升级？
 
 ```bash

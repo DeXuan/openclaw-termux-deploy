@@ -1,6 +1,6 @@
 ---
 name: openclaw-android-deploy
-description: 在安卓手机上通过 Termux 完整部署 OpenClaw AI 网关（原生方案，无需 root/proot），覆盖 SSH 远程管理、模型供应商配置、runit 进程保活、Termux:Boot 开机自启、Tailscale 固定 IP、adb 系统加固、QQ/飞书/微信（官方 iLink）机器人渠道接入、全队版本升级（Node/libsqlite 适配），内置 24 个实战踩坑的修复方案和 4 台真机（Android 7/10/15）的机型适配矩阵与工具版本组合。当用户要求在手机/旧手机/安卓设备上部署 OpenClaw、把手机改造成 AI 服务器/低功耗服务器、复刻 openclaw-termux 部署、升级机队 OpenClaw 版本、或排查手机上已部署 OpenClaw 的故障（掉线/不回话/重启失联/升级后拒启）时使用。
+description: 在安卓手机上通过 Termux 完整部署 OpenClaw AI 网关（原生方案，无需 root/proot），覆盖 SSH 远程管理、模型供应商配置、runit 进程保活、Termux:Boot 开机自启、Tailscale 固定 IP、adb 系统加固、QQ/飞书/微信（官方 iLink）机器人渠道接入、全队版本升级（Node/libsqlite 适配），内置 25 个实战踩坑的修复方案和 4 台真机（Android 7/10/15）的机型适配矩阵与工具版本组合。当用户要求在手机/旧手机/安卓设备上部署 OpenClaw、把手机改造成 AI 服务器/低功耗服务器、复刻 openclaw-termux 部署、升级机队 OpenClaw 版本、或排查手机上已部署 OpenClaw 的故障（掉线/不回话/重启失联/升级后拒启）时使用。
 ---
 
 # OpenClaw 安卓手机部署

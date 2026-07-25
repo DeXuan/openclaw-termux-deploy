@@ -1,8 +1,8 @@
-# 踩坑速查（24 坑全录）
+# 踩坑速查（25 坑全录）
 
 按报错现象查找。来源：2026-07 四台真机（K60 / MIX 2S / Note 7 / Note 4X）实战部署与全队升级。
 
-**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16/24 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15/22 · **升级 17/18/19/20** · 资源 23
+**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16/24/25 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15/22 · **升级 17/18/19/20** · 资源 23
 
 | # | 现象 | 原因 | 解法 |
 |---|------|------|------|
@@ -30,6 +30,7 @@
 | 22 | 微信官方安装器报 `未找到 openclaw，请先安装`（实际 openclaw 在 PATH 且能跑） | 安装器用 `execSync("which openclaw")` 检测宿主，Termux 默认**没有 `which` 二进制**（`command -v` 是 shell 内建，人工验证时反而发现不了差异） | `pkg install which` 后重跑安装器 |
 | 23 | 双开 openclaw CLI（如两个 `channels login`）后 SSH 全断 exit 255、gateway 被杀重启 | 每个 CLI 都是完整 node 实例（数百 MB），3GB 机内存压爆触发 LMK 连坐；`channels status --probe` 同理过重卡死 | 单机同一时刻只跑**一个** CLI 实例；渠道验证改 grep 服务日志；gateway 靠 runit 自愈（15s） |
 | 24 | 改完 `plugins.allow` 重启后日志仍报 `plugins.allow is empty` | 修改配置时 gateway 正在运行，其收到 TERM 退出瞬间把内存里的旧配置**写回覆盖**了新文件（Note 7 实测中招，其余三台一次成功，属竞态） | 稳妥流程 `sv down` → 改配置 → `sv up`；或改完重启后 `grep "allow is empty"` 校验，仍在就再重启一次 |
+| 25 | runit 日志循环 `./run: exec: openclaw: not found`，但 SSH 里 `which openclaw` 和 `openclaw --version` 都正常 | Android/Termux **没有 `/usr/bin/env`**，npm 全局 bin symlink → `.mjs` 的 shebang `#!/usr/bin/env node` 在内核 `exec()` 时找不到解释器。**交互 shell（bash）会自行处理 shebang 所以人工测试正常，极具迷惑性** | 见下方详解 |
 
 ## 坑 14 详解：QQ IP 白名单
 
@@ -48,6 +49,36 @@ export NODE_OPTIONS="--dns-result-order=ipv4first"
 1. 油猴脚本「QQ开放平台机器人关闭IP白名单」（Greasy Fork，非官方）
 2. 白名单填运营商网段（若平台支持 CIDR）
 3. **换飞书渠道**（无白名单限制，终局方案）
+
+## 坑 25 详解：shebang `/usr/bin/env` 陷阱
+
+**现象**：runit 日志每秒刷 `./run: 4: exec: /data/data/.../openclaw: not found`，gateway 始终起不来。但 SSH 进去手动跑 `which openclaw` 正常、`openclaw --version` 正常，容易误判为"服务配置问题"。
+
+**根因**：`npm install -g openclaw` 创建的全局 bin 是一个 symlink → `../lib/node_modules/openclaw/openclaw.mjs`。`.mjs` 文件第一行 shebang 是 `#!/usr/bin/env node`。Android/Linux 内核在执行脚本时，必须找到 shebang 指定的解释器。但 Android 文件系统**没有 `/usr/bin/env`**（Termux 的 `env` 在 `$PREFIX/bin/env` 即 `/data/data/com.termux/files/usr/bin/env`）。
+
+**为什么 SSH 里能跑但 runit 不能**：交互 shell（bash）遇到 shebang 指向不存在的路径时，会**自行在 PATH 中搜索**解释器并执行。但 runit 的 `runsv` 通过 `exec()` 系统调用启动 run 脚本，再由 shell 的 `exec` 触发内核的二进制加载器——内核不走 shell 的 fallback 逻辑，直接报 ENOENT。
+
+**影响范围**：2026-07-25 全队检修确认——Note 4X 已挂（本坑触发）、K60/Note 7 在跑但重启必挂（定时炸弹）、MIX 2S 已免疫（2026-07-20 手工建了 bash wrapper）。
+
+**修复方案（二选一）**：
+
+```bash
+# 方案A：只修 runit run 脚本（最小改动，Note 4X 采用）
+# 把 run 里的 "exec $OPENCLAW_BIN gateway" 改为直接调 node：
+exec $PREFIX/bin/node $PREFIX/lib/node_modules/openclaw/openclaw.mjs gateway
+
+# 方案B：替换 npm symlink 为 bash wrapper（根治，MIX 2S/K60/Note 7 采用）
+OPENCLAW_BIN=$(command -v openclaw)
+NPM_ROOT=$(npm root -g)
+rm "$OPENCLAW_BIN"
+cat > "$OPENCLAW_BIN" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+exec node NPM_ROOT/openclaw/openclaw.mjs "$@"
+EOF
+chmod +x "$OPENCLAW_BIN"
+```
+
+**预防**：`phone_setup_service.sh` v2.6+ 已在创建 runit 服务前自动执行方案 B，新部署不再踩此坑。
 
 ## 其他经验
 
