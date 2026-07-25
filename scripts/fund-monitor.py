@@ -46,7 +46,7 @@ def push(text):
                    input=text, capture_output=True, text=True, timeout=15)
 
 def analyze(funds, prev):
-    alerts, lines = [], []
+    alerts, rows = [], []
     total_val = 0
     today_str = datetime.now().strftime('%Y-%m-%d')
     up_count = down_count = 0
@@ -62,25 +62,20 @@ def analyze(funds, prev):
         elif chg < 0: down_count += 1
         if is_qdii: qdii_count += 1
 
-        # 涨跌标记
-        arrow = '↑' if chg > 0 else ('↓' if chg < 0 else '→')
-        star = ' ★' if abs(chg) >= 3 else ''
+        # 标记
+        arrow = '+' if chg > 0 else ('-' if chg < 0 else ' ')
+        star = '★' if abs(chg) >= 3 else ' '
+        if pnl > 0: face = ':)'
+        elif pnl > -10: face = ':|'
+        else: face = ':('
 
-        # PnL 颜色标记
-        if pnl > 0: pnl_tag = '🟢'
-        elif pnl > -10: pnl_tag = '🟡'
-        else: pnl_tag = '🔴'
+        # 对齐表格列
+        date_s = d[5:] if is_qdii else '    '
+        rows.append(f"{arrow}{star} {name:<10s} {nav:>7.4f} {chg:>+6.2f}% {pnl:>+6.1f}% {face} {date_s}")
 
-        # 构建行
-        line = f"{arrow} {name:<12s} {nav:>8.4f} {chg:>+6.2f}%"
-        line += f" {pnl_tag}{pnl:+.1f}%"
-        if is_qdii: line += f" [{d[5:]}]"
-        if star: line += star
-        lines.append(line)
-        if star:
-            alerts.append(f"{'🔻' if chg<0 else '🔺'} {name}({code}) {chg:+.2f}% NAV:{nav:.4f}")
-
-        # 连续趋势(3日累计>3%才报)
+        # 信号检测
+        if abs(chg) >= 3:
+            alerts.append(f"🔻 {name}({code}) {chg:+.2f}% NAV:{nav:.4f}" if chg < 0 else f"🔺 {name}({code}) {chg:+.2f}% NAV:{nav:.4f}")
         if len(navs) >= 4:
             if navs[0] < navs[1] < navs[2]:
                 cum = round((navs[0]/navs[2]-1)*100, 1)
@@ -90,24 +85,25 @@ def analyze(funds, prev):
                 cum = round((navs[0]/navs[2]-1)*100, 1)
                 if cum > 3:
                     alerts.append(f"📈 连涨3日 {name}({code}) 累计{cum:+.1f}%")
-
-        # 回本提醒
         k = f"{code}:pnl"
         if k in prev and prev[k] < -5 and pnl >= -5:
             alerts.append(f"🎯 回本在即 {name}({code}) 浮亏仅{pnl:+.1f}%")
-
-        # 亏损恶化
         if chg < -3 and pnl < -10 and k in prev and pnl < prev[k]:
             alerts.append(f"⚠️ 亏损恶化 {name}({code}) 日跌{chg:+.1f}% 浮亏{pnl:+.1f}%")
 
-    # 汇总头部
-    total_pnl = sum(f['amount'] * f['pnl'] / 100 for f in funds.values())
+    # 表格
     header = f"📊 基金日报 {today_str[5:]}\n"
-    header += f"总值 {total_val:,} | 涨{up_count}跌{down_count}"
+    header += f"总值{total_val:,} | 涨{up_count}跌{down_count}"
     if qdii_count: header += f" | QDII延迟{qdii_count}只"
-    header += f"\n{'─'*40}"
+    header += f"\n```\n{'':3s} {'基金':<10s} {'净值':>7s} {'涨跌':>7s} {'浮亏':>7s} {'':3s} {'日期'}\n{'─'*48}"
 
-    return alerts, header + '\n' + '\n'.join(lines)
+    table = header + '\n' + '\n'.join(rows) + '\n```'
+
+    # 信号追加在表格后面
+    if alerts:
+        table += '\n' + '\n'.join(alerts[:8])
+
+    return alerts, table
 
 def load_state():
     try:
@@ -127,12 +123,5 @@ if __name__ == '__main__':
     alerts, summary = analyze(funds, prev)
     print(summary)
     push(summary)
-    sent = set()
-    for a in alerts:
-        k = a[:20]
-        if k not in sent:
-            push(a)
-            sent.add(k)
-            print(f"  -> {a}")
     save_state(funds, prev)
     print(f"Done: {len(funds)} funds, {len(alerts)} alerts")
