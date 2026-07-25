@@ -50,32 +50,36 @@ def analyze(funds, prev):
     total_val = 0
     today_str = datetime.now().strftime('%Y-%m-%d')
     up_count = down_count = 0
-    qdii_count = 0
 
-    for code in sorted(funds.keys(), key=lambda c: -funds[c]['nav_today'][2]):
-        f = funds[code]; name = f['name']; amt = f['amount']; pnl = f['pnl']
+    # 分成两组: A股当日 / QDII延迟
+    a_share = []
+    qdii = []
+
+    for code, f in funds.items():
+        name = f['name']; amt = f['amount']; pnl = f['pnl']
         d, nav, chg = f['nav_today']; navs = f['navs']
         total_val += amt
-        is_qdii = d != today_str
-
         if chg > 0: up_count += 1
         elif chg < 0: down_count += 1
-        if is_qdii: qdii_count += 1
 
         # 标记
-        arrow = '+' if chg > 0 else ('-' if chg < 0 else ' ')
-        star = '★' if abs(chg) >= 3 else ' '
-        if pnl > 0: face = ':)'
-        elif pnl > -10: face = ':|'
-        else: face = ':('
+        arrow = '↑' if chg > 0 else ('↓' if chg < 0 else '→')
+        star = ' ●' if abs(chg) >= 3 else ''
+        if pnl > 0: face = '😊'
+        elif pnl > -10: face = '😐'
+        else: face = '😞'
 
-        # 对齐表格列
-        date_s = d[5:] if is_qdii else '    '
-        rows.append(f"{arrow}{star} {name:<10s} {nav:>7.4f} {chg:>+6.2f}% {pnl:>+6.1f}% {face} {date_s}")
+        # 紧凑行: ↑东吴移动互联 6.8239 -1.7% -12%😞 ●
+        short_name = name[:7]
+        row = f"{arrow}{star} {short_name:<7s} {nav:>7.4f} {chg:>+5.1f}% {pnl:>+4.0f}%{face}"
 
-        # 信号检测
+        is_qdii = d != today_str
+        if is_qdii: row += f" [{d[5:]}]"
+        (qdii if is_qdii else a_share).append((chg, row))
+
+        # 信号检测 (与之前相同)
         if abs(chg) >= 3:
-            alerts.append(f"🔻 {name}({code}) {chg:+.2f}% NAV:{nav:.4f}" if chg < 0 else f"🔺 {name}({code}) {chg:+.2f}% NAV:{nav:.4f}")
+            alerts.append(f"{'🔻' if chg<0 else '🔺'} {name}({code}) {chg:+.2f}% NAV:{nav:.4f}")
         if len(navs) >= 4:
             if navs[0] < navs[1] < navs[2]:
                 cum = round((navs[0]/navs[2]-1)*100, 1)
@@ -88,22 +92,32 @@ def analyze(funds, prev):
         k = f"{code}:pnl"
         if k in prev and prev[k] < -5 and pnl >= -5:
             alerts.append(f"🎯 回本在即 {name}({code}) 浮亏仅{pnl:+.1f}%")
-        if chg < -3 and pnl < -10 and k in prev and pnl < prev[k]:
-            alerts.append(f"⚠️ 亏损恶化 {name}({code}) 日跌{chg:+.1f}% 浮亏{pnl:+.1f}%")
 
-    # 表格
+    # 按涨幅降序排列
+    a_share.sort(key=lambda x: -x[0])
+    qdii.sort(key=lambda x: -x[0])
+
+    # 构建消息
     header = f"📊 基金日报 {today_str[5:]}\n"
     header += f"总值{total_val:,} | 涨{up_count}跌{down_count}"
-    if qdii_count: header += f" | QDII延迟{qdii_count}只"
-    header += f"\n```\n{'':3s} {'基金':<10s} {'净值':>7s} {'涨跌':>7s} {'浮亏':>7s} {'':3s} {'日期'}\n{'─'*48}"
+    if qdii: header += f" | QDII延迟{len(qdii)}只"
+    header += "\n"
 
-    table = header + '\n' + '\n'.join(rows) + '\n```'
+    # A股部分
+    if a_share:
+        header += "\n—— 当日净值 ——\n"
+        header += '\n'.join(r for _, r in a_share)
 
-    # 信号追加在表格后面
+    # QDII部分
+    if qdii:
+        header += "\n\n—— QDII延迟净值 ——\n"
+        header += '\n'.join(r for _, r in qdii)
+
+    # 信号
     if alerts:
-        table += '\n' + '\n'.join(alerts[:8])
+        header += '\n\n' + '\n'.join(f"  {a}" for a in alerts[:6])
 
-    return alerts, table
+    return alerts, header
 
 def load_state():
     try:
