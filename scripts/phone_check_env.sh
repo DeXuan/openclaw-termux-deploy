@@ -106,4 +106,30 @@ else
   echo "[SKIP] runit 服务未创建（阶段 4）"
 fi
 
+# ── 8. 渠道探活 ──
+GLOG=$(ls -t /data/data/com.termux/files/usr/tmp/openclaw-*/openclaw-2026-07-*.log 2>/dev/null | head -1)
+if [ -n "$GLOG" ] && [ -f "$GLOG" ]; then
+  # QQ bot
+  QQ_READY=$(grep -c "qqbot.*Gateway ready" "$GLOG" 2>/dev/null || echo 0)
+  QQ_WS=$(grep -c "qqbot.*WebSocket connected" "$GLOG" 2>/dev/null || echo 0)
+  if [ "$QQ_READY" -gt 0 ] 2>/dev/null; then
+    echo "[PASS] QQ 渠道: Gateway ready ×${QQ_READY}, WebSocket connected ×${QQ_WS}"
+  else
+    echo "[INFO] QQ 渠道: 今日无连接记录（可能未配置或日志已轮转）"
+  fi
+  # 飞书
+  FS_WS=$(grep -c "feishu.*WebSocket client started" "$GLOG" 2>/dev/null || echo 0)
+  if [ "$FS_WS" -gt 0 ] 2>/dev/null; then
+    echo "[PASS] 飞书渠道: WebSocket started ×${FS_WS}"
+  else
+    echo "[INFO] 飞书渠道: 今日无连接记录（可能未配置）"
+  fi
+  # 错误统计
+  ERR_1006=$(grep -c "WebSocket closed: 1006" "$GLOG" 2>/dev/null || echo 0)
+  ERR_401=$(grep -c "401\|白名单" "$GLOG" 2>/dev/null || echo 0)
+  echo "[INFO] 今日 WebSocket 异常: 1006×${ERR_1006}  401/IP白名单×${ERR_401}"
+else
+  echo "[SKIP] 未找到 gateway 日志"
+fi
+
 echo "==== 体检完成 ===="

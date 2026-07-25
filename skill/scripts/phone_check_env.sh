@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/usr/bin/sh
-# Canonical: scripts/phone_check_env.sh — sync from there
 # 机型环境体检（手机 Termux 侧执行，只读不改，幂等）
 # 用法: cat phone_check_env.sh | ssh -p 8022 user@<IP> 'sh -'
 # 输出各项 [PASS]/[FAIL]/[SKIP]，FAIL 项附坑号与修复命令
@@ -68,6 +67,25 @@ else
   echo "[SKIP] openclaw 未安装"
 fi
 
+# ── 5b. shebang/env 陷阱检测（坑 25）──
+OCBIN=$(command -v openclaw 2>/dev/null)
+if [ -n "$OCBIN" ] && [ -L "$OCBIN" ]; then
+  OCTGT=$(ls -l "$OCBIN" 2>/dev/null | awk -F' -> ' '{print $2}')
+  if echo "$OCTGT" | grep -q '\.mjs$'; then
+    OCSHEBANG=$(head -1 "$OCBIN" 2>/dev/null)
+    if echo "$OCSHEBANG" | grep -q '#!/usr/bin/env'; then
+      if [ ! -x /usr/bin/env ]; then
+        echo "[FAIL] 坑25：openclaw 是 symlink→.mjs + shebang /usr/bin/env，但 Android 无 /usr/bin/env！"
+        echo "       SSH 交互正常但 runit exec 会报 not found。修复: phone_setup_service.sh（v2.6+ 自动处理）"
+      else
+        echo "[PASS] openclaw shebang + /usr/bin/env 均正常"
+      fi
+    fi
+  fi
+elif [ -n "$OCBIN" ] && [ -f "$OCBIN" ]; then
+  head -1 "$OCBIN" 2>/dev/null | grep -q 'bash' && echo "[PASS] openclaw 已是 bash wrapper（坑25 免疫）"
+fi
+
 # ── 6. 开机自启链 ──
 [ -x ~/.termux/boot/start-services.sh ] && echo "[PASS] boot 脚本存在" || echo "[FAIL] boot 脚本缺失（阶段 4 的 phone_setup_service.sh 会建）"
 BOOTPKG=$(pm list packages 2>/dev/null | grep -c com.termux.boot)
@@ -86,6 +104,32 @@ if [ -d "$SVDIR/openclaw" ]; then
   echo "[INFO] dashboard HTTP $(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://127.0.0.1:18789/ 2>/dev/null)"
 else
   echo "[SKIP] runit 服务未创建（阶段 4）"
+fi
+
+# ── 8. 渠道探活 ──
+GLOG=$(ls -t /data/data/com.termux/files/usr/tmp/openclaw-*/openclaw-2026-07-*.log 2>/dev/null | head -1)
+if [ -n "$GLOG" ] && [ -f "$GLOG" ]; then
+  # QQ bot
+  QQ_READY=$(grep -c "qqbot.*Gateway ready" "$GLOG" 2>/dev/null || echo 0)
+  QQ_WS=$(grep -c "qqbot.*WebSocket connected" "$GLOG" 2>/dev/null || echo 0)
+  if [ "$QQ_READY" -gt 0 ] 2>/dev/null; then
+    echo "[PASS] QQ 渠道: Gateway ready ×${QQ_READY}, WebSocket connected ×${QQ_WS}"
+  else
+    echo "[INFO] QQ 渠道: 今日无连接记录（可能未配置或日志已轮转）"
+  fi
+  # 飞书
+  FS_WS=$(grep -c "feishu.*WebSocket client started" "$GLOG" 2>/dev/null || echo 0)
+  if [ "$FS_WS" -gt 0 ] 2>/dev/null; then
+    echo "[PASS] 飞书渠道: WebSocket started ×${FS_WS}"
+  else
+    echo "[INFO] 飞书渠道: 今日无连接记录（可能未配置）"
+  fi
+  # 错误统计
+  ERR_1006=$(grep -c "WebSocket closed: 1006" "$GLOG" 2>/dev/null || echo 0)
+  ERR_401=$(grep -c "401\|白名单" "$GLOG" 2>/dev/null || echo 0)
+  echo "[INFO] 今日 WebSocket 异常: 1006×${ERR_1006}  401/IP白名单×${ERR_401}"
+else
+  echo "[SKIP] 未找到 gateway 日志"
 fi
 
 echo "==== 体检完成 ===="
