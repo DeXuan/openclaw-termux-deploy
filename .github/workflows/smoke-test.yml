@@ -28,7 +28,7 @@ jobs:
         run: |
           echo "=== bash -n 语法检查 ==="
           FAIL=0
-          for f in $(find . -name "*.sh" -not -path "./.git/*" -not -path "./skill-formatter/*"); do
+          for f in $(find . -name "*.sh" -not -path "./.git/*"); do
             bash -n "$f" 2>&1 || { echo "FAIL: $f"; FAIL=1; }
           done
           # openclaw-deploy 无后缀但也需要检查
@@ -40,7 +40,7 @@ jobs:
         run: |
           echo "=== python3 -m py_compile ==="
           FAIL=0
-          for f in $(find . -name "*.py" -not -path "./.git/*" -not -path "./skill-formatter/*"); do
+          for f in $(find . -name "*.py" -not -path "./.git/*"); do
             python3 -c "import py_compile; py_compile.compile('$f', doraise=True)" 2>&1 || { echo "FAIL: $f"; FAIL=1; }
           done
           if [ $FAIL -eq 0 ]; then echo "All python compile OK"; fi
@@ -70,6 +70,4 @@ jobs:
       - name: ShellCheck (warning level, full coverage)
         uses: ludeeus/action-shellcheck@master
         with:
-          ignore_paths: >-
-            skill-formatter
           severity: warning
