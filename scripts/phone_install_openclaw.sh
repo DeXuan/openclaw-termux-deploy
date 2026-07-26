@@ -1,6 +1,11 @@
 #!/data/data/com.termux/files/usr/bin/sh
 # OpenClaw 安装脚本（手机 Termux 侧执行，幂等可重跑）
 # 用法: cat phone_install_openclaw.sh | ssh -p 8022 user@<IP> 'sh -'
+#
+# ⚠️ 同步约定：本文件是 SSH 管道安装的 canonical 版本。
+# 修改安装逻辑时请同步更新：
+#   - install.sh                          (自包含 curl-pipe 入口)
+#   - skill/scripts/phone_install_openclaw.sh (技能引用副本)
 set -e
 
 # 中断清理提示

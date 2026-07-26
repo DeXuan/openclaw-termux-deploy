@@ -30,10 +30,23 @@ collect_local() {
   echo "GW:${GW} |UP:${UP} |MEM:${MEM} |DSK:${DSK}"
 }
 
+# ── 设备 IP（优先 ~/.fleet-devices.conf，兜底硬编码；与 lib/common.sh 保持同步）──
+if [ -f ~/.fleet-devices.conf ]; then
+  . ~/.fleet-devices.conf
+else
+  MIX2S_SSH="u0_a129@100.104.72.125:8022"
+  NOTE4X_SSH="u0_a129@192.168.1.19:8022"
+  NOTE7_SSH="u0_a171@100.91.94.44:8022"
+fi
+
+# 从 SSH 连接串中提取 user@host 和 port
+parse_conn() { echo "${1%:*}"; }
+parse_port() { echo "${1##*:}"; }
+
 K60_INFO=$(collect_local)
-MIX2S_INFO=$(collect "192.168.1.20")
-NOTE4_INFO=$(collect "192.168.1.19")
-NOTE7_INFO=$(collect "100.91.94.44")
+MIX2S_INFO=$(collect "$(parse_conn "$MIX2S_SSH")" "$(parse_port "$MIX2S_SSH")")
+NOTE4_INFO=$(collect "$(parse_conn "$NOTE4X_SSH")" "$(parse_port "$NOTE4X_SSH")")
+NOTE7_INFO=$(collect "$(parse_conn "$NOTE7_SSH")" "$(parse_port "$NOTE7_SSH")")
 
 TEXT="OPENCLAW FLEET $(date '+%m/%d %H:%M')
 ================
@@ -44,21 +57,9 @@ Note7 | $NOTE7_INFO
 ================
 Daily 08:57 | Backup Sun 02:00"
 
-TOKEN=$(curl -s -X POST "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal" \
-  -H "Content-Type: application/json" \
-  -d "{\"app_id\":\"$FEISHU_APP_ID\",\"app_secret\":\"$FEISHU_APP_SECRET\"}" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin).get('tenant_access_token',''))" 2>/dev/null)
-
-CONTENT=$(python3 -c "import json; print(json.dumps({'text': '''$TEXT'''}))" 2>/dev/null)
-
-RESP=$(curl -s -X POST "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"receive_id\":\"$FEISHU_RECEIVE_ID\",\"msg_type\":\"text\",\"content\":$CONTENT}")
-
-CODE=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('code',''))" 2>/dev/null)
-if [ "$CODE" = "0" ]; then
+# 统一飞书推送
+if echo "$TEXT" | python3 ~/feishu_push.py >> ~/fleet-dashboard.log 2>&1; then
   echo "[$(date +%H:%M)] dashboard sent OK" >> ~/fleet-dashboard.log
 else
-  echo "[$(date +%H:%M)] dashboard FAILED: $RESP" >> ~/fleet-dashboard.log
+  echo "[$(date +%H:%M)] dashboard FAILED" >> ~/fleet-dashboard.log
 fi

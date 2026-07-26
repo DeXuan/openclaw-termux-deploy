@@ -67,10 +67,10 @@ One-click view of all devices: gateway status, RAM, disk, swap, uptime.
 ### 🩺 Self-Healing Mesh
 ```
 K60 ⇄ Note 7   Mutual monitoring + auto-restart (Tailscale)
-MIX 2S → K60   Backup monitor (LAN)
-Note 4X → K60   Backup monitor (LAN)
+MIX 2S → K60   Backup monitor (Tailscale)
+Note 4X → K60  Backup monitor (LAN)
 ```
-Gateway down → auto restart via SSH → still down? → Feishu alert.
+All 4 devices covered. Gateway down → auto restart via SSH → still down? → Feishu alert.
 
 ### 📡 Multi-Channel Bots
 | Channel | Protocol | IP Whitelist | Setup |
@@ -151,12 +151,13 @@ cat scripts/phone_check_env.sh | ssh -p 8022 u0_a129@<IP> 'sh -'
 |------|---------|----------|
 | Dashboard | `./openclaw-deploy dashboard` | On demand |
 | Health check | `cat scripts/phone_check_env.sh \| ssh …` | On demand |
-| IP change alert | check-ip.sh | Every 10 min |
-| Mutual healthcheck | healthcheck.sh | Every 5 min |
-| Daily report | fleet-dashboard.sh | 8:57 AM daily |
-| Fund NAV report | fund-monitor.py | 3:30 PM weekdays |
-| Config backup | backup-configs.sh | Sun 2:00 AM |
-| Version check | check-version.sh | Mon 10:37 AM |
+| IP change alert | `check-ip.sh` | Every 10 min |
+| Mutual healthcheck | `healthcheck.sh` (per-device) | Every 5 min |
+| Daily report | `fleet-dashboard.sh` | 8:57 AM daily |
+| Fund NAV report | `fund-monitor.py` | 3:30 PM weekdays |
+| Fund weekly report | `fund-weekly.py` | Fri 10:00 PM |
+| Config backup | `backup-configs.sh` | Sun 2:00 AM |
+| Version check | `check-version.sh` | Mon 10:37 AM |
 
 ---
 

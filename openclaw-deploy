@@ -51,28 +51,52 @@ if [ $# -gt 0 ]; then
       ;;
     logs|l)
       target="${2:-K60}"; lines="${3:-50}"
-      local logpath='$PREFIX/var/log/sv/openclaw/current'
-      echo -e "${C_BOLD}─── $target: tail -$lines ───${C_RESET}"
-      ssh_device "$target" "tail -$lines $logpath 2>/dev/null" || echo "  不可达"
+      logpath='$PREFIX/var/log/sv/openclaw/current'
+      if [ "$target" = "--all" ] || [ "$target" = "-a" ]; then
+        for dev in K60 Note7 MIX2S Note4X; do
+          echo -e "\n${C_BOLD}─── $dev: tail -$lines ───${C_RESET}"
+          ssh_device "$dev" "tail -$lines $logpath 2>/dev/null" || echo "  不可达"
+        done
+      else
+        echo -e "${C_BOLD}─── $target: tail -$lines ───${C_RESET}"
+        ssh_device "$target" "tail -$lines $logpath 2>/dev/null" || echo "  不可达"
+      fi
       exit 0
       ;;
     service|sv|s)
       action="${2:-status}"; target="${3:-K60}"
-      case "$action" in
-        status) ssh_device "$target" "export SVDIR=\$PREFIX/var/service && sv status openclaw 2>&1" || echo "  不可达" ;;
-        restart|up|down)
-          echo -e "${C_YELLOW}${action} openclaw on $target...${C_RESET}"
-          ssh_device "$target" "export SVDIR=\$PREFIX/var/service && sv $action openclaw 2>&1" || echo "  不可达"
-          ;;
-        *) echo "用法: $0 service [status|restart|up|down] [device]" ;;
-      esac
+      # --all 批量操作所有设备
+      if [ "$target" = "--all" ] || [ "$target" = "-a" ]; then
+        for dev in K60 Note7 MIX2S Note4X; do
+          echo -e "\n${C_BOLD}─── $dev ───${C_RESET}"
+          case "$action" in
+            status) ssh_device "$dev" "export SVDIR=\$PREFIX/var/service && sv status openclaw 2>&1" || echo "  不可达" ;;
+            restart|up|down)
+              echo -e "  ${C_YELLOW}${action}...${C_RESET}"
+              ssh_device "$dev" "export SVDIR=\$PREFIX/var/service && sv $action openclaw 2>&1" || echo "  不可达"
+              ;;
+          esac
+        done
+      else
+        case "$action" in
+          status) ssh_device "$target" "export SVDIR=\$PREFIX/var/service && sv status openclaw 2>&1" || echo "  不可达" ;;
+          restart|up|down)
+            echo -e "${C_YELLOW}${action} openclaw on $target...${C_RESET}"
+            ssh_device "$target" "export SVDIR=\$PREFIX/var/service && sv $action openclaw 2>&1" || echo "  不可达"
+            ;;
+          *) echo "用法: $0 service [status|restart|up|down] [device|--all]" ;;
+        esac
+      fi
       exit 0
       ;;
     check|c)
-      local ck="$SCRIPT_DIR/scripts/phone_check_env.sh"
+      ck="$SCRIPT_DIR/scripts/phone_check_env.sh"
       [ ! -f "$ck" ] && ck="$SCRIPT_DIR/skill/scripts/phone_check_env.sh"
-      local targets=("${@:2}")
-      [ ${#targets[@]} -eq 0 ] && targets=(K60 Note7 MIX2S Note4X)
+      targets=("${@:2}")
+      # --all 或空参数 → 默认全队
+      if [ ${#targets[@]} -eq 0 ] || [ "${targets[0]}" = "--all" ] || [ "${targets[0]}" = "-a" ]; then
+        targets=(K60 Note7 MIX2S Note4X)
+      fi
       for dev in "${targets[@]}"; do
         echo -e "\n${C_BOLD}─── $dev ───${C_RESET}"
         ssh_device "$dev" "sh -" < "$ck" 2>&1 || echo "  不可达"
@@ -87,7 +111,7 @@ if [ $# -gt 0 ]; then
         target="${conn%:*}"
       fi
       user="${3:-u0_a129}"
-      local inst="$SCRIPT_DIR/scripts/phone_install_openclaw.sh"
+      inst="$SCRIPT_DIR/scripts/phone_install_openclaw.sh"
       [ ! -f "$inst" ] && inst="$SCRIPT_DIR/skill/scripts/phone_install_openclaw.sh"
       echo -e "${C_YELLOW}Installing on $target as $user...${C_RESET}"
       cat "$inst" | ssh -p 8022 "$user@$target" 'sh -'
@@ -101,21 +125,25 @@ if [ $# -gt 0 ]; then
       echo "openclaw-deploy v$VERSION — OpenClaw Termux 机队管理工具箱"
       echo ""
       echo "命令:"
-      echo "  dashboard, d        机队仪表盘"
+      echo "  dashboard, d        机队仪表盘 (4台设备)"
       echo "  dashboard --json    机队状态 (JSON 输出)"
       echo "  wizard, w           新手部署向导"
-      echo "  check [dev...]      全队体检 (默认全部4台)"
-      echo "  logs <dev> [n]      查看远程日志 (默认K60,50行)"
-      echo "  service <action> <d> 服务管理 (status/restart/up/down)"
+      echo "  check [dev...]      全队体检 (默认 K60/Note7/MIX2S/Note4X)"
+      echo "  logs <dev> [n]      查看远程日志 (--all 全队)"
+      echo "  service <action> <d> 服务管理 (--all 全队操作)"
       echo "  install <dev> [usr] 远程部署"
       echo "  version             版本号"
       echo "  help                帮助信息"
       echo ""
+      echo "设备名: K60 | Note7 | MIX2S | Note4X"
+      echo ""
       echo "示例:"
       echo "  ./openclaw-deploy dashboard --json"
       echo "  ./openclaw-deploy logs Note7 100"
-      echo "  ./openclaw-deploy service restart K60"
-      echo "  ./openclaw-deploy check K60 Note7"
+      echo "  ./openclaw-deploy logs --all 30"
+      echo "  ./openclaw-deploy service restart MIX2S"
+      echo "  ./openclaw-deploy service restart --all"
+      echo "  ./openclaw-deploy check K60 Note7 MIX2S Note4X"
       exit 0
       ;;
     *) echo "未知命令: $1"; echo "用法: $0 [dashboard|wizard|check|logs|service|install|version|help]"; exit 1 ;;

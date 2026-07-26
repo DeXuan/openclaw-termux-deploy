@@ -22,7 +22,8 @@
   - [5. 服务管理 — 启停控制](#5-服务管理--启停控制)
   - [6. 自愈系统 — 自动修复](#6-自愈系统--自动修复)
   - [7. 技能工具箱 — 能力扩展](#7-技能工具箱--能力扩展)
-  - [8. 模型与渠道](#8-模型与渠道)
+  - [8. 模型管理](#8-模型管理)
+  - [9. 渠道部署](#9-渠道部署)
 - [非交互模式](#非交互模式)
 - [常见问题](#常见问题)
 - [进阶玩法](#进阶玩法)
@@ -111,7 +112,13 @@ chmod +x openclaw-deploy
   │   Gateway:  在线   内存: 3.0Gi  磁盘: 13G/50G 26%  Swap: 26%
   │   在线: 5 days, 2 hours, 14 minutes
   │
-  │ ⚡ MIX 2S · 🪨 Note 4X — 离线中
+  │ ⚡ MIX 2S — 稳定副机 (QQ+飞书)
+  │   Gateway:  在线   内存: 2.5Gi  磁盘: 20G/110G 18%  Swap: —
+  │   在线: 2 days, 1 hour
+  │
+  │ 🪨 Note4X — 韧性备机 (QQ+飞书)
+  │   Gateway:  在线   内存: 0.9Gi  磁盘: 8G/16G  52%  Swap: 10%
+  │   在线: 2 hours
   ╰────────────────────────────────────────────────────────╯
 
   [r] 刷新  [R] 强制刷新  [0] 返回
@@ -121,7 +128,7 @@ chmod +x openclaw-deploy
 
 按 `r` 刷新，按 `0` 返回主菜单。
 
-> 📸 **截图位置：** 仪表盘全屏截图，展示 K60 和 Note 7 在线数据
+> 📸 **截图位置：** 仪表盘全屏截图，展示四台设备实时数据
 
 ### 新手部署向导
 
@@ -274,7 +281,11 @@ K60 (每5分钟) ──SSH──→ Note 7 ──curl──→ gateway HTTP 200?
                          ├── 是 → 静默
                          └── 否 → sv restart → 等20s → 重试2次
                                ├── 恢复 → 记录日志
-                               └── 失败 → QQ 告警
+                               └── 失败 → 飞书告警
+
+Note 7 (每5分钟) ──SSH──→ K60 (同上，互为监控)
+MIX 2S (每5分钟) ──SSH──→ K60 (备份监控，Tailscale)
+Note 4X (每5分钟) ──SSH──→ K60 (备份监控，仅LAN)
 
 同时每10分钟本地自检：磁盘>90%清理 · 内存<500M重启 · swap>80%告警
 ```
@@ -313,17 +324,31 @@ OpenClaw 的技能系统相当于"App Store"。K60 已安装 63 个就绪技能�
 
 > 完整技能清单见 [docs/device-comparison.md](docs/device-comparison.md) 附录 B。
 
-### 8. 模型与渠道
+### 8. 模型管理
 
 ```
-🤖 模型与渠道
+🤖 模型管理
 
   1   🧠 模型列表        查看当前可用模型
   2   📡 渠道状态        QQ/飞书/微信连接状态
   3   💰 免费额度        百炼模型免费额度查询
+  4   🔄 额度自动切换     部署 quota_watcher 守护进程
 ```
 
 K60 当前模型策略：`deepseek-v4-flash` 主用（免费额度优先消耗），`deepseek-v4-pro` 自动兜底。
+
+### 9. 渠道部署
+
+```
+📡 渠道部署
+
+  1   🐧 QQ 机器人       安装插件 + 配置 AppID/Secret + IP 白名单
+  2   🕊️ 飞书机器人      安装插件 + 配置 AppID/Secret (无 IP 白名单)
+  3   💬 微信 iLink      安装 + 扫码绑定 (仅 K60 推荐)
+  4   📋 查看渠道日志    grep 最近 20 行渠道相关日志
+```
+
+支持 QQ/飞书/微信三大渠道的一键部署和配置，含远程扫码等便利功能。
 
 ---
 
@@ -472,7 +497,12 @@ openclaw-termux-deploy/
 │   ├── phone_setup_service.sh      ← runit 服务配置
 │   ├── k60-healthcheck.sh          ← K60 自愈互检
 │   ├── note7-healthcheck.sh        ← Note 7 自愈互检
-│   └── self-check.sh               ← 本地资源自检
+│   ├── mix2s-healthcheck.sh        ← MIX 2S 自愈互检
+│   ├── note4x-healthcheck.sh       ← Note 4X 自愈互检
+│   ├── self-check.sh               ← 本地资源自检
+│   ├── backup-configs.sh           ← 配置定时备份
+│   ├── check-ip.sh                 ← IP 漂移检测
+│   └── check-version.sh            ← 版本更新检测
 ├── docs/
 │   └── device-comparison.md ← 机队全景文档（572 行）
 ├── skill/                   ← OpenClaw 技能定义

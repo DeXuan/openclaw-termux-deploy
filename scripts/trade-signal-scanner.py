@@ -17,7 +17,6 @@ LIMIT_PCT  = 9.0    # 逼近涨跌停告警
 AMP_ALERT  = 5.0    # 日内振幅超过此值告警
 COOLDOWN_S = 1800   # 同一信号30分钟内不重复报
 
-FEISHU_CONF = os.path.expanduser("~/.fleet-dashboard.conf")
 STATE_FILE  = os.path.expanduser("~/.trade-signal-state.json")
 
 def fetch():
@@ -57,30 +56,21 @@ def detect(stocks):
         if alerts: signals[code] = alerts
     return signals
 
+FEISHU_PUSH = os.path.expanduser("~/feishu_push.py")
+
 def push(text):
+    """统一飞书推送 — 通过 ~/feishu_push.py 发送"""
     try:
-        with open(FEISHU_CONF) as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith('FEISHU_') and '=' in line:
-                    k, v = line.split('=', 1)
-                    os.environ[k.strip()] = v.strip().strip('"')
-    except (FileNotFoundError, PermissionError): return
-    r = subprocess.run(['python3', '-c', """
-import json, urllib.request, os
-token_resp = json.loads(urllib.request.urlopen(urllib.request.Request(
-    "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
-    data=json.dumps({"app_id": os.environ["FEISHU_APP_ID"], "app_secret": os.environ["FEISHU_APP_SECRET"]}).encode(),
-    headers={"Content-Type": "application/json"})).read())
-token = token_resp.get("tenant_access_token", "")
-body = {"receive_id": os.environ["FEISHU_RECEIVE_ID"], "msg_type": "text", "content": json.dumps({"text": os.environ["MSG"]})}
-resp = json.loads(urllib.request.urlopen(urllib.request.Request(
-    "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id",
-    data=json.dumps(body).encode(),
-    headers={"Authorization": "Bearer "+token, "Content-Type": "application/json"})).read())
-print("OK" if resp.get("code")==0 else f"FAIL:{resp.get('code')}")
-"""], capture_output=True, text=True, timeout=15)
-    print(f"Feishu: {r.stdout.strip()}")
+        r = subprocess.run(
+            ['python3', FEISHU_PUSH, '-m', text],
+            capture_output=True, text=True, timeout=15
+        )
+        if r.returncode == 0:
+            print("Feishu: OK")
+        else:
+            print(f"Feishu: FAIL ({r.stderr.strip()})")
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
+        print(f"Feishu: ERROR ({e})")
 
 def load_state():
     try:

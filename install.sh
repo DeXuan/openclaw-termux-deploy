@@ -1,11 +1,17 @@
 #!/data/data/com.termux/files/usr/bin/sh
 # ⚡ OpenClaw Termux Deploy — One-Line Installer
 # curl -fsSL https://raw.githubusercontent.com/DeXuan/openclaw-termux-deploy/main/install.sh | bash
+#
+# ⚠️ 同步约定：本文件是自包含的 curl-pipe 入口（不能引用外部文件）。
+# 修改安装逻辑时请同步更新以下 canonical 脚本：
+#   - scripts/phone_install_openclaw.sh  (SSH 管道安装，含合规预检)
+#   - scripts/phone_setup_service.sh     (runit + boot 配置，含坑25修复)
+#   - skill/scripts/ 下的对应副本
 set -e
 
 echo ""
 echo "  ╔══════════════════════════════════════════╗"
-echo "  ║   OpenClaw Termux Deploy  v2.7          ║"
+echo "  ║   OpenClaw Termux Deploy  v1.0.0        ║"
 echo "  ║   One-command Android → AI server       ║"
 echo "  ╚══════════════════════════════════════════╝"
 echo ""

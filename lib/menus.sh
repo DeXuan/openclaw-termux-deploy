@@ -271,7 +271,9 @@ check_menu() {
   menu_item "1" "📱" "本机体检"        "当前设备一键诊断"
   menu_item "2" "🔥" "K60 远程体检"    "SSH 到 K60 诊断"
   menu_item "3" "🍃" "Note 7 远程体检" "SSH 到 Note 7 诊断"
-  menu_item "4" "📊" "全队体检"        "两台在线设备一键体检"
+  menu_item "4" "⚡" "MIX 2S 远程体检" "SSH 到 MIX 2S 诊断"
+  menu_item "5" "🪨" "Note 4X 远程体检""SSH 到 Note 4X 诊断"
+  menu_item "6" "📊" "全队体检"        "四台设备一键体检"
   echo -e "  ${C_BOLD}[0]${C_RESET} 返回"
   echo
   read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" choice
@@ -283,8 +285,10 @@ check_menu() {
     1) [ -f "$ck" ] && bash "$ck" || log_fail "找不到体检脚本" ;;
     2) spinner_start "连接 K60..."; ssh_device K60 "sh -" < "$ck" 2>&1; spinner_stop ;;
     3) spinner_start "连接 Note 7..."; ssh_device Note7 "sh -" < "$ck" 2>&1; spinner_stop ;;
-    4)
-      for dev in K60 Note7; do
+    4) spinner_start "连接 MIX 2S..."; ssh_device MIX2S "sh -" < "$ck" 2>&1; spinner_stop ;;
+    5) spinner_start "连接 Note 4X..."; ssh_device Note4X "sh -" < "$ck" 2>&1; spinner_stop ;;
+    6)
+      for dev in K60 Note7 MIX2S Note4X; do
         echo -e "\n  ${C_BOLD}── ${dev} ──${C_RESET}"
         spinner_start "检查 $dev..."
         ssh_device "$dev" "sh -" < "$ck" 2>&1 || echo "  ${ICO_FAIL} 不可达"
@@ -303,37 +307,48 @@ dashboard_menu() {
   echo
   echo -e "  ${C_DIM}${BOX_TL}$(printf "${BOX_H}%.0s" $(seq 1 56))${BOX_TR}${C_RESET}"
 
-  local k60_gw n7_gw k60_mem n7_mem k60_disk n7_disk k60_swap n7_swap k60_up n7_up
+  # Parallel probe all 4 devices for faster dashboard
+  local tmpdir="${TMPDIR:-/tmp}/dash-probe-$$"
+  mkdir -p "$tmpdir"
+  for dev in K60 Note7 MIX2S Note4X; do
+    (
+      gw=$(ssh_device "$dev" 'curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 http://127.0.0.1:18789/' 2>/dev/null) || gw="fail"
+      mem=$(ssh_device "$dev" 'free -h 2>/dev/null | awk "/^Mem:/ {print \$7}"' 2>/dev/null) || mem="—"
+      disk=$(ssh_device "$dev" 'df -h /data/data/com.termux/files 2>/dev/null|awk "NR==2{print \$3\"/\"\$2\" \"\$5}"' 2>/dev/null) || disk="—"
+      [ -z "$disk" ] && disk=$(ssh_device "$dev" 'df -h /data 2>/dev/null|awk "NR==2{print \$3\"/\"\$2\" \"\$5}"' 2>/dev/null) || true
+      [ -z "$disk" ] && disk="—"
+      swap=$(ssh_device "$dev" 'free 2>/dev/null|awk "/^Swap:/{if(\$2>0)printf \"%.0f%%\",(\$2-\$4)*100/\$2;else print \"—\"}"' 2>/dev/null) || swap="—"
+      up=$(ssh_device "$dev" 'uptime -p 2>/dev/null|sed "s/up //"' 2>/dev/null) || up="—"
+      echo "$gw|$mem|$disk|$swap|$up" > "$tmpdir/$dev"
+    ) &
+  done
+  wait
 
-  k60_gw=$(ssh_device K60 'curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 http://127.0.0.1:18789/' 2>/dev/null) || k60_gw="fail"
-  k60_mem=$(ssh_device K60 'free -h | awk "/^Mem:/ {print \$7}"' 2>/dev/null) || k60_mem="—"
-  k60_disk=$(ssh_device K60 'df -h /data/data/com.termux/files 2>/dev/null|awk "NR==2{print \$3\"/\"\$2\" \"\$5}"' 2>/dev/null) || k60_disk="—"
-  [ -z "$k60_disk" ] && k60_disk=$(ssh_device K60 'df -h /data 2>/dev/null|awk "NR==2{print \$3\"/\"\$2\" \"\$5}"' 2>/dev/null) || true
-  k60_swap=$(ssh_device K60 'free|awk "/^Swap:/{if(\$2>0)printf \"%.0f%%\",(\$2-\$4)*100/\$2;else print \"—\"}"' 2>/dev/null) || k60_swap="—"
-  k60_up=$(ssh_device K60 'uptime -p 2>/dev/null|sed "s/up //"' 2>/dev/null) || k60_up="—"
+  # Read results from probe files
+  read_dash() { local d="$1" f="$2"; awk -F'|' -v f="$f" 'NR==1{print $f}' "$tmpdir/$d" 2>/dev/null || echo "—"; }
+  k60_gw=$(read_dash K60 1);  k60_mem=$(read_dash K60 2); k60_disk=$(read_dash K60 3); k60_swap=$(read_dash K60 4); k60_up=$(read_dash K60 5)
+  n7_gw=$(read_dash Note7 1);  n7_mem=$(read_dash Note7 2); n7_disk=$(read_dash Note7 3); n7_swap=$(read_dash Note7 4); n7_up=$(read_dash Note7 5)
+  mx_gw=$(read_dash MIX2S 1);  mx_mem=$(read_dash MIX2S 2); mx_disk=$(read_dash MIX2S 3); mx_swap=$(read_dash MIX2S 4); mx_up=$(read_dash MIX2S 5)
+  n4_gw=$(read_dash Note4X 1); n4_mem=$(read_dash Note4X 2); n4_disk=$(read_dash Note4X 3); n4_swap=$(read_dash Note4X 4); n4_up=$(read_dash Note4X 5)
+  rm -rf "$tmpdir"
 
-  n7_gw=$(ssh_device Note7 'curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 http://127.0.0.1:18789/' 2>/dev/null) || n7_gw="fail"
-  n7_mem=$(ssh_device Note7 'free -h | awk "/^Mem:/ {print \$7}"' 2>/dev/null) || n7_mem="—"
-  n7_disk=$(ssh_device Note7 'df -h /data/data/com.termux/files 2>/dev/null|awk "NR==2{print \$3\"/\"\$2\" \"\$5}"' 2>/dev/null) || n7_disk="—"
-  [ -z "$n7_disk" ] && n7_disk=$(ssh_device Note7 'df -h /data 2>/dev/null|awk "NR==2{print \$3\"/\"\$2\" \"\$5}"' 2>/dev/null) || true
-  n7_swap=$(ssh_device Note7 'free|awk "/^Swap:/{if(\$2>0)printf \"%.0f%%\",(\$2-\$4)*100/\$2;else print \"—\"}"' 2>/dev/null) || n7_swap="—"
-  n7_up=$(ssh_device Note7 'uptime -p 2>/dev/null|sed "s/up //"' 2>/dev/null) || n7_up="—"
+  gw_pill() { [ "$1" = "200" ] && pill_ok || pill_off; }
 
-  local kgw_pill n7gw_pill
-  [ "$k60_gw" = "200" ] && kgw_pill="$(pill_ok)" || kgw_pill="$(pill_off)"
-  [ "$n7_gw" = "200" ] && n7gw_pill="$(pill_ok)" || n7gw_pill="$(pill_off)"
+  print_device_row() {
+    local emoji="$1" name="$2" role="$3" gw="$4" mem="$5" disk="$6" swap="$7" up="$8"
+    printf "  ${C_DIM}${BOX_V}${C_RESET} ${C_BOLD}%s %s${C_RESET} — %s\n" "$emoji" "$name" "$role"
+    printf "  ${C_DIM}${BOX_V}${C_RESET}   Gateway: %b  内存: ${C_GREEN}%s${C_RESET}  磁盘: %s  Swap: %s\n" \
+      "$(gw_pill "$gw")" "$mem" "$disk" "$swap"
+    printf "  ${C_DIM}${BOX_V}${C_RESET}   在线: %s\n" "$up"
+  }
 
-  printf "  ${C_DIM}${BOX_V}${C_RESET} ${C_BOLD}🔥 K60${C_RESET} — 随身主力机\n"
-  printf "  ${C_DIM}${BOX_V}${C_RESET}   Gateway: %b  内存: ${C_GREEN}%s${C_RESET}  磁盘: %s  Swap: %s\n" \
-    "$kgw_pill" "$k60_mem" "$k60_disk" "$k60_swap"
-  printf "  ${C_DIM}${BOX_V}${C_RESET}   在线: %s\n" "$k60_up"
+  print_device_row "🔥" "K60"    "随身主力机" "$k60_gw" "$k60_mem" "$k60_disk" "$k60_swap" "$k60_up"
   echo -e "  ${C_DIM}${BOX_V}${C_RESET}"
-  printf "  ${C_DIM}${BOX_V}${C_RESET} ${C_BOLD}🍃 Note 7${C_RESET} — 家里轻量机\n"
-  printf "  ${C_DIM}${BOX_V}${C_RESET}   Gateway: %b  内存: ${C_GREEN}%s${C_RESET}  磁盘: %s  Swap: %s\n" \
-    "$n7gw_pill" "$n7_mem" "$n7_disk" "$n7_swap"
-  printf "  ${C_DIM}${BOX_V}${C_RESET}   在线: %s\n" "$n7_up"
+  print_device_row "🍃" "Note 7" "家里轻量机" "$n7_gw"   "$n7_mem"  "$n7_disk"  "$n7_swap"  "$n7_up"
   echo -e "  ${C_DIM}${BOX_V}${C_RESET}"
-  printf "  ${C_DIM}${BOX_V}${C_RESET} ${C_DIM}⚡ MIX 2S · 🪨 Note 4X — 离线中${C_RESET}\n"
+  print_device_row "⚡" "MIX 2S" "稳定副机"   "$mx_gw"   "$mx_mem"  "$mx_disk"  "$mx_swap"  "$mx_up"
+  echo -e "  ${C_DIM}${BOX_V}${C_RESET}"
+  print_device_row "🪨" "Note4X" "韧性备机"   "$n4_gw"   "$n4_mem"  "$n4_disk"  "$n4_swap"  "$n4_up"
   echo -e "  ${C_DIM}${BOX_BL}$(printf "${BOX_H}%.0s" $(seq 1 56))${BOX_BR}${C_RESET}"
 
   echo
@@ -398,7 +413,7 @@ selfheal_menu() {
   header
   echo -e "  ${C_BOLD}${C_WHITE}🩺 自愈系统${C_RESET}\n"
   menu_item "1" "📦" "安装到本机"      "部署 healthcheck + self-check + crontab"
-  menu_item "2" "📡" "安装到远程"      "SSH 部署到 K60 / Note 7"
+  menu_item "2" "📡" "安装到远程"      "SSH 部署到 K60/Note7/MIX2S/Note4X"
   menu_item "3" "📊" "自愈状态"        "检查 crond / 脚本 / 重启记录"
   menu_item "4" "📋" "查看日志"        "互检日志 / 自检日志 / 告警记录"
   echo -e "  ${C_BOLD}[0]${C_RESET} 返回"
@@ -408,11 +423,18 @@ selfheal_menu() {
   case "$choice" in
     1) install_selfheal_local ;;
     2)
-      echo; echo -e "  ${C_BOLD}目标:${C_RESET} [1] K60  [2] Note 7  [3] 两台"; read -r -p "  > " dc
+      echo; echo -e "  ${C_BOLD}目标:${C_RESET} [1] K60  [2] Note 7  [3] MIX 2S  [4] Note 4X  [5] 全部"; read -r -p "  > " dc
       case "$dc" in
         1) install_selfheal_remote K60 k60-healthcheck.sh ;;
         2) install_selfheal_remote Note7 note7-healthcheck.sh ;;
-        3) install_selfheal_remote K60 k60-healthcheck.sh; install_selfheal_remote Note7 note7-healthcheck.sh ;;
+        3) install_selfheal_remote MIX2S mix2s-healthcheck.sh ;;
+        4) install_selfheal_remote Note4X note4x-healthcheck.sh ;;
+        5)
+          install_selfheal_remote K60 k60-healthcheck.sh
+          install_selfheal_remote Note7 note7-healthcheck.sh
+          install_selfheal_remote MIX2S mix2s-healthcheck.sh
+          install_selfheal_remote Note4X note4x-healthcheck.sh
+          ;;
       esac
       ;;
     3) check_selfheal_status ;;
@@ -443,7 +465,7 @@ install_selfheal_remote() {
 
 check_selfheal_status() {
   echo
-  for dev in K60 Note7; do
+  for dev in K60 Note7 MIX2S Note4X; do
     echo -e "  ${C_BOLD}── ${dev} ──${C_RESET}"
     if ssh_device "$dev" 'ps aux | grep -q "[c]rond -f"' 2>/dev/null; then
       echo -e "  crond:       $(pill_ok)"
@@ -460,8 +482,8 @@ check_selfheal_status() {
 
 view_selfheal_logs() {
   echo; echo -e "  ${C_BOLD}日志类型:${C_RESET} [1] healthcheck  [2] self-check  [3] alert  [4] last_restart"; read -r -p "  > " lc
-  echo -e "  ${C_BOLD}设备:${C_RESET} [1] K60  [2] Note 7"; read -r -p "  > " dc
-  local dev; case "$dc" in 1) dev="K60" ;; 2) dev="Note7" ;; *) dev="K60" ;; esac
+  echo -e "  ${C_BOLD}设备:${C_RESET} [1] K60  [2] Note 7  [3] MIX 2S  [4] Note 4X"; read -r -p "  > " dc
+  local dev; case "$dc" in 1) dev="K60" ;; 2) dev="Note7" ;; 3) dev="MIX2S" ;; 4) dev="Note4X" ;; *) dev="K60" ;; esac
   echo
   case "$lc" in
     1) ssh_device "$dev" 'cat ~/healthcheck.log 2>/dev/null' || echo "  (无日志)" ;;

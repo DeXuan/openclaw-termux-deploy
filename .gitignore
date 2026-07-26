@@ -20,3 +20,7 @@ healthcheck.last_restart
 *.tar.gz
 *.zip
 *.skill
+
+# Python
+__pycache__/
+*.pyc

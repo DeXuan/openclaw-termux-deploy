@@ -1,0 +1,9 @@
+# OpenClaw 机队设备连接信息
+# 部署到 ~/.fleet-devices.conf（K60 上）
+# IP 修改请同步更新 lib/common.sh 的 DEVICES 数组
+# 格式: DEVICE_SSH="user@ip:port"
+
+K60_SSH="u0_a129@100.118.60.29:8022"
+NOTE7_SSH="u0_a171@100.91.94.44:8022"
+MIX2S_SSH="u0_a129@100.104.72.125:8022"
+NOTE4X_SSH="u0_a129@192.168.1.19:8022"

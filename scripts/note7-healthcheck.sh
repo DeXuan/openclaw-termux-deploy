@@ -3,6 +3,7 @@
 # cron: */5 * * * * ~/healthcheck.sh
 set -euo pipefail
 
+# IP 来源: lib/common.sh DEVICES[K60]，修改 IP 请同步更新
 TARGET="u0_a129@100.118.60.29"
 PORT="8022"
 LOG=~/healthcheck.log

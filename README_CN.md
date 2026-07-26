@@ -65,10 +65,10 @@ Termux 里粘贴执行，~10 分钟自动完成：Node.js + OpenClaw + runit 保
 ### 🩺 自愈网格
 ```
 K60 ⇄ Note 7   双向互检 + 自动重启 (Tailscale)
-MIX 2S → K60   备份监控 (LAN)
-Note 4X → K60   备份监控 (LAN)
+MIX 2S → K60   备份监控 (Tailscale)
+Note 4X → K60  备份监控 (LAN)
 ```
-Gateway 挂了 → SSH 远程重启 → 还不行 → 飞书告警。
+4 台全覆盖。Gateway 挂了 → SSH 远程重启 → 还不行 → 飞书告警。
 
 ### 📡 多渠道机器人
 | 渠道 | 协议 | IP 白名单 | 接入方式 |
@@ -148,13 +148,13 @@ cat scripts/phone_check_env.sh | ssh -p 8022 u0_a129@<IP> 'sh -'
 |------|------|------|
 | 仪表盘 | `./openclaw-deploy dashboard` | 按需 |
 | 环境体检 | `cat scripts/phone_check_env.sh \| ssh …` | 按需 |
-| IP 变更告警 | check-ip.sh | 每 10 分钟 |
-| 双向互检 | healthcheck.sh | 每 5 分钟 |
-| 每日机队日报 | fleet-dashboard.sh | 每天 8:57 |
-| 基金净值日报 | fund-monitor.py | 交易日 15:30 |
-| 基金周报 | fund-weekly.py | 周五 22:00 |
-| 配置备份 | backup-configs.sh | 周日 02:00 |
-| 版本检测 | check-version.sh | 周一 10:37 |
+| IP 变更告警 | `check-ip.sh` | 每 10 分钟 |
+| 双向互检 | `healthcheck.sh`（每台设备） | 每 5 分钟 |
+| 每日机队日报 | `fleet-dashboard.sh` | 每天 8:57 |
+| 基金净值日报 | `fund-monitor.py` | 交易日 15:30 |
+| 基金周报 | `fund-weekly.py` | 周五 22:00 |
+| 配置备份 | `backup-configs.sh` | 周日 02:00 |
+| 版本检测 | `check-version.sh` | 周一 10:37 |
 
 ---
 

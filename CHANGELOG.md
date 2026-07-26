@@ -24,18 +24,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🩺 Healthcheck alert: Feishu API direct push instead of openclaw agent
 - 🔍 Version update checker: weekly npm scan → Feishu alert
 - 💾 Config backup: weekly pull from all 4 devices to K60
+- 🩺 Self-healing coverage: all 4 devices (MIX 2S → K60 Tailscale, Note 4X → K60 LAN)
+- 📊 Dashboard now shows real-time data for all 4 devices (was K60 + Note7 only)
+- 🔍 Check menu supports individual and full-fleet health checks for all 4 devices
 
 ### Fixed
 - 🐛 Pitfall #25: shebang `/usr/bin/env` trap on Android/Termux
 - 🔴 ShellCheck CI badge — changed from red (failing) to green (passing)
 - 🟡 Fund report format — compact mobile-friendly layout with QDII separation
 - 🔵 Note 4X model — primary switched from GLM-5.2 to qwen-portal/coder-model
+- 🔢 Version number unified: install.sh, openclaw-deploy, CHANGELOG all v1.0.0
 
 ### Changed
 - README totally rewritten: badges, comparison table, fleet dashboard preview
 - GUIDE.md updated with troubleshooting FAQ for pitfall #25
 - phone_check_env.sh: added channel probe (QQ/Feishu) + pitfall #25 detection
 - MIX 2S crontab intervals tightened: 15/30 → 5/10 minutes
+- Dashboard menu: parallel probe all 4 devices (was sequential K60+Note7 only)
+- Self-healing menu: supports all 4 devices for install/status/logs
+- bailian-quota-switcher phone_check_env.sh synced to canonical version
+
+### Added (P2 — 2026-07-26)
+- 🚀 `scripts/feishu_push.py` — unified Feishu push module (stdin / `-m` / `-t`), replaces 4 duplicate implementations
+- 📖 `scripts/README.md` — script index grouped by scenario (deploy/heal/monitor/finance)
+- 🎯 CLI `--all` flag for `service` and `logs` commands — batch operate all 4 devices
+- 📋 `fleet-devices.conf.example` — centralized IP config template
+- 📁 `scripts/phone_setup_service.sh` — canonical copy in scripts/ directory
+
+### Changed (P2)
+- `fleet-dashboard.sh`: Feishu push uses unified module; IPs from config file
+- `check-ip.sh`: Feishu push uses unified module (was inline curl+python3)
+- `check-version.sh`: Feishu push uses unified module (was inline curl+python3)
+- `trade-signal-scanner.py`: Feishu push uses unified module (was inline subprocess with os.environ hacks)
+- `backup-configs.sh`: IPs from `~/.fleet-devices.conf` with fallback
+- All healthcheck scripts: IP source-of-truth comments added
+- Install scripts: cross-reference comments for sync discipline
 
 ---
 
