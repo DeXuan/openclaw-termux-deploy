@@ -29,21 +29,67 @@ require_openclaw() {
 if [ $# -gt 0 ]; then
   case "$1" in
     wizard|w) wizard_menu; exit 0 ;;
-    dashboard|dash|d) dashboard_menu; exit 0 ;;
+    dashboard|dash|d)
+      shift
+      if [ "${1:-}" = "--json" ] || [ "${1:-}" = "-j" ]; then
+        printf '{"devices":{'
+        first=true
+        for dev in K60 Note7 MIX2S Note4X; do
+          gw=$(ssh_device "$dev" 'curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 http://127.0.0.1:18789/' 2>/dev/null) || gw="fail"
+          mem=$(ssh_device "$dev" "free -m 2>/dev/null | awk '/Mem:/{printf \"%.1f/%.1f\",\$7/1024,\$2/1024}'" 2>/dev/null) || mem="N/A"
+          disk=$(ssh_device "$dev" "df -h /data 2>/dev/null | awk 'NR==2{print \$5}'" 2>/dev/null) || disk="N/A"
+          up=$(ssh_device "$dev" "uptime -p 2>/dev/null | sed 's/up //'" 2>/dev/null) || up="N/A"
+          $first || printf ','
+          printf '"%s":{"gw":"%s","mem":"%s","disk":"%s","up":"%s"}' "$dev" "$gw" "$mem" "$disk" "$up"
+          first=false
+        done
+        echo '}}'
+      else
+        dashboard_menu
+      fi
+      exit 0
+      ;;
+    logs|l)
+      target="${2:-K60}"; lines="${3:-50}"
+      local logpath='$PREFIX/var/log/sv/openclaw/current'
+      echo -e "${C_BOLD}─── $target: tail -$lines ───${C_RESET}"
+      ssh_device "$target" "tail -$lines $logpath 2>/dev/null" || echo "  不可达"
+      exit 0
+      ;;
+    service|sv|s)
+      action="${2:-status}"; target="${3:-K60}"
+      case "$action" in
+        status) ssh_device "$target" "export SVDIR=\$PREFIX/var/service && sv status openclaw 2>&1" || echo "  不可达" ;;
+        restart|up|down)
+          echo -e "${C_YELLOW}${action} openclaw on $target...${C_RESET}"
+          ssh_device "$target" "export SVDIR=\$PREFIX/var/service && sv $action openclaw 2>&1" || echo "  不可达"
+          ;;
+        *) echo "用法: $0 service [status|restart|up|down] [device]" ;;
+      esac
+      exit 0
+      ;;
     check|c)
       local ck="$SCRIPT_DIR/scripts/phone_check_env.sh"
       [ ! -f "$ck" ] && ck="$SCRIPT_DIR/skill/scripts/phone_check_env.sh"
-      for dev in K60 Note7; do
+      local targets=("${@:2}")
+      [ ${#targets[@]} -eq 0 ] && targets=(K60 Note7 MIX2S Note4X)
+      for dev in "${targets[@]}"; do
         echo -e "\n${C_BOLD}─── $dev ───${C_RESET}"
         ssh_device "$dev" "sh -" < "$ck" 2>&1 || echo "  不可达"
       done
       exit 0
       ;;
     install|i)
-      target="${2:-}"; [ -z "$target" ] && { echo "用法: $0 install <K60|Note7|IP> [user]"; exit 1; }
+      target="${2:-}"; [ -z "$target" ] && { echo "用法: $0 install <K60|Note7|MIX2S|Note4X|IP> [user]"; exit 1; }
+      # Resolve device name to IP if in fleet
+      if [ -n "${DEVICES[$target]:-}" ]; then
+        conn="${DEVICES[$target]}"
+        target="${conn%:*}"
+      fi
       user="${3:-u0_a129}"
       local inst="$SCRIPT_DIR/scripts/phone_install_openclaw.sh"
       [ ! -f "$inst" ] && inst="$SCRIPT_DIR/skill/scripts/phone_install_openclaw.sh"
+      echo -e "${C_YELLOW}Installing on $target as $user...${C_RESET}"
       cat "$inst" | ssh -p 8022 "$user@$target" 'sh -'
       exit 0
       ;;
@@ -53,14 +99,26 @@ if [ $# -gt 0 ]; then
       ;;
     help|--help|-h)
       echo "openclaw-deploy v$VERSION — OpenClaw Termux 机队管理工具箱"
-      echo "用法: ./openclaw-deploy              交互式 TUI"
-      echo "      ./openclaw-deploy dashboard    机队仪表盘"
-      echo "      ./openclaw-deploy wizard       新手部署向导"
-      echo "      ./openclaw-deploy check        全队一键体检"
-      echo "      ./openclaw-deploy install <t>  远程部署"
+      echo ""
+      echo "命令:"
+      echo "  dashboard, d        机队仪表盘"
+      echo "  dashboard --json    机队状态 (JSON 输出)"
+      echo "  wizard, w           新手部署向导"
+      echo "  check [dev...]      全队体检 (默认全部4台)"
+      echo "  logs <dev> [n]      查看远程日志 (默认K60,50行)"
+      echo "  service <action> <d> 服务管理 (status/restart/up/down)"
+      echo "  install <dev> [usr] 远程部署"
+      echo "  version             版本号"
+      echo "  help                帮助信息"
+      echo ""
+      echo "示例:"
+      echo "  ./openclaw-deploy dashboard --json"
+      echo "  ./openclaw-deploy logs Note7 100"
+      echo "  ./openclaw-deploy service restart K60"
+      echo "  ./openclaw-deploy check K60 Note7"
       exit 0
       ;;
-    *) echo "未知命令: $1"; echo "用法: $0 [dashboard|wizard|check|install|version|help]"; exit 1 ;;
+    *) echo "未知命令: $1"; echo "用法: $0 [dashboard|wizard|check|logs|service|install|version|help]"; exit 1 ;;
   esac
 fi
 

@@ -247,17 +247,52 @@ header() {
   echo
 }
 
-# ═══ Fleet Status Bar ═══
+# ═══ Fleet Status Bar (parallel SSH, cached 60s) ═══
+FLEET_CACHE_FILE="${TMPDIR:-/tmp}/openclaw-fleet-cache"
+FLEET_CACHE_TTL=60
+
 fleet_status_bar() {
+  # Use cache if fresh
+  local now
+  now=$(date +%s)
+  if [ -f "$FLEET_CACHE_FILE" ]; then
+    local cache_time
+    cache_time=$(head -1 "$FLEET_CACHE_FILE" 2>/dev/null || echo 0)
+    if [ $((now - cache_time)) -lt "$FLEET_CACHE_TTL" ]; then
+      tail -n +2 "$FLEET_CACHE_FILE"
+      return
+    fi
+  fi
+
+  # Parallel probe: fire all SSH probes as background jobs
+  local tmpdir="${TMPDIR:-/tmp}/fleet-probe-$$"
+  mkdir -p "$tmpdir"
+  for dev in K60 Note7 MIX2S Note4X; do
+    (
+      status=$(ssh_device "$dev" 'curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 http://127.0.0.1:18789/' 2>/dev/null) || status="fail"
+      echo "$dev $status" > "$tmpdir/$dev"
+    ) &
+  done
+  wait  # Wait for all probes to complete (max ~3s total vs ~12s sequential)
+
+  # Build status bar from results
   local dots=""
   for dev in K60 Note7 MIX2S Note4X; do
     local status
-    status=$(ssh_device "$dev" 'curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://127.0.0.1:18789/' 2>/dev/null) || status="fail"
+    status=$(awk '{print $2}' "$tmpdir/$dev" 2>/dev/null) || status="fail"
     if [ "$status" = "200" ]; then dots+="${C_GREEN}●${C_RESET} ${dev}  "
     else dots+="${C_RED}○${C_RESET} ${dev}  "
     fi
   done
-  echo -e "  ${C_DIM}$(date '+%Y-%m-%d %H:%M')${C_RESET}    ${dots}${C_DIM}|${C_RESET}  $(get_device_name 2>/dev/null || echo 'PC')"
+  rm -rf "$tmpdir"
+
+  local bar
+  bar=$(echo -e "  ${C_DIM}$(date '+%Y-%m-%d %H:%M')${C_RESET}    ${dots}${C_DIM}|${C_RESET}  $(get_device_name 2>/dev/null || echo 'PC')")
+
+  # Cache the result
+  echo "$now" > "$FLEET_CACHE_FILE"
+  echo "$bar" >> "$FLEET_CACHE_FILE"
+  echo "$bar"
 }
 
 # ═══ Menu Item ═══
