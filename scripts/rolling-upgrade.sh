@@ -29,9 +29,9 @@ source "$SCRIPT_DIR/../lib/common.sh" 2>/dev/null || {
 }
 
 DRY_RUN=false
-TARGET_VERSION="${1:-latest}"
+TARGET_VERSION="latest"
 declare -a TARGETS=()
-UPGRADE_LOG="/tmp/openclaw-upgrade-$(date +%Y%m%d-%H%M).log"
+UPGRADE_LOG="$HOME/openclaw-upgrade-$(date +%Y%m%d-%H%M).log"  # Termux 没有 /tmp（坑21）
 CANARY=""  # 第一台金丝雀设备
 
 # ═══ Args ═══
@@ -241,4 +241,4 @@ for dev in "${TARGETS[@]}"; do
 done
 
 log ""
-log "日志: $UPGRADE_LOG"
+log "日志: ~/$(basename "$UPGRADE_LOG")"

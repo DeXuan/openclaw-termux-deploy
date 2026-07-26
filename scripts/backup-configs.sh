@@ -76,8 +76,8 @@ if [ "$(hostname 2>/dev/null)" = "localhost" ] || [ -d ~/.openclaw ]; then
   local_dir="$BACKUP_DIR/K60-local"
   mkdir -p "$local_dir"
   for f in "${FILES_TO_BACKUP[@]}"; do
-    cp ~/ "$f" "$local_dir/$(basename "$f")" 2>/dev/null && \
-      log "  local: $f ✓" || true
+    cp ~/"$f" "$local_dir/$(basename "$f")" 2>/dev/null && \
+      log "  K60-local: $f ✓" || true
   done
   crontab -l 2>/dev/null > "$local_dir/crontab.txt" || true
 fi
