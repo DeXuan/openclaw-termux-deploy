@@ -14,9 +14,16 @@ DISK_MAX_PCT=90       # 磁盘使用率超过此值清理
 LOG_MAX_KB=5120       # 单个日志超过此值截断 (5MB)
 
 log()  { echo "[$(date '+%m-%d %H:%M')] $1" >> "$LOG"; }
+
+source ~/alert-dedup.sh 2>/dev/null || { dedup_check() { return 0; }; }
+
 alert() {
-  echo "[$(date '+%m-%d %H:%M')] $1" >> "$ALERT_LOG"
-  timeout 15 openclaw agent --agent main --message "⚙️ ${HOSTNAME}: $1" 2>/dev/null || true
+  local msg="$1" dedup_key="${2:-}"
+  echo "[$(date '+%m-%d %H:%M')] $msg" >> "$ALERT_LOG"
+  if [ -n "$dedup_key" ] && ! dedup_check "$dedup_key" 3600; then
+    return 0
+  fi
+  timeout 15 openclaw agent --agent main --message "⚙️ ${HOSTNAME}: $msg" 2>/dev/null || true
 }
 
 CLEANED=0
@@ -69,7 +76,7 @@ if [ "$SWAP_TOTAL" -gt 0 ]; then
   SWAP_USED=$((SWAP_TOTAL - SWAP_FREE))
   SWAP_PCT=$((SWAP_USED * 100 / SWAP_TOTAL))
   if [ "$SWAP_PCT" -gt "$SWAP_MAX_PCT" ]; then
-    alert "Swap ${SWAP_PCT}% (${SWAP_USED}KB/${SWAP_TOTAL}KB), 需关注。Android 无法主动释放 swap，建议稍后观察或重启 gateway。"
+    alert "Swap ${SWAP_PCT}% (${SWAP_USED}KB/${SWAP_TOTAL}KB), 需关注。Android 无法主动释放 swap，建议稍后观察或重启 gateway。" "self-swap"
   fi
 fi
 

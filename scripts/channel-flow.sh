@@ -10,8 +10,16 @@ MAX_LATENCY_MS=30000    # 平均响应超过 30s 告警
 TAIL_LINES=500          # 每次扫描最近 N 行（约 10-15 分钟量）
 
 log()  { echo "[$(date '+%m-%d %H:%M')] $1" >> "$LOG"; }
+
+source ~/alert-dedup.sh 2>/dev/null || { dedup_check() { return 0; }; }
+
 alert() {
-  echo "$1" | python3 ~/feishu_push.py -t "📡 消息流告警" 2>/dev/null || true
+  local msg="$1" dedup_key="${2:-}"
+  # 去重: 有 key 且冷却中则跳过推送
+  if [ -n "$dedup_key" ] && ! dedup_check "$dedup_key" 1800; then
+    return 0
+  fi
+  echo "$msg" | python3 ~/feishu_push.py -t "📡 消息流告警" 2>/dev/null || true
 }
 
 # ── 找最新 gateway 日志 ──
@@ -102,35 +110,26 @@ fi
 
 log "$STATUS"
 
-# ═══ 6. 告警判断 ═══
-ALERTS=""
+# ═══ 6. 告警判断 (每类独立去重，30分钟冷却) ═══
 
 # 有消息收但全都没回复
 if [ "$QQ_RECEIVED" -gt 0 ] 2>/dev/null && [ "$QQ_SENT" -eq 0 ] 2>/dev/null; then
-  ALERTS+="🔴 QQ 收到 ${QQ_RECEIVED} 条消息但全部未回复！Agent 可能卡死或模型不可用
-"
+  alert "🔴 QQ 收到 ${QQ_RECEIVED} 条消息但全部未回复！Agent 可能卡死或模型不可用" "cf-no-reply"
 fi
 
 # 未回复超过阈值
 if [ "$UNREPLIED" -gt "$MAX_UNREPLIED_ALERT" ] 2>/dev/null; then
-  ALERTS+="⚠️ 未回复消息 ×${UNREPLIED}（阈值 ${MAX_UNREPLIED_ALERT}）
-${UNREPLIED_MSGS}"
+  alert "⚠️ 未回复消息 ×${UNREPLIED}（阈值 ${MAX_UNREPLIED_ALERT}）
+${UNREPLIED_MSGS}" "cf-unreplied"
 fi
 
 # 响应延迟过高
 if [ "$AVG_LATENCY" != "N/A" ] && [ "$AVG_LATENCY" -gt "$MAX_LATENCY_MS" ] 2>/dev/null; then
-  ALERTS+="⚠️ 平均响应延迟 ${AVG_LATENCY}ms（阈值 ${MAX_LATENCY_MS}ms），模型或网络慢
-"
+  alert "⚠️ 平均响应延迟 ${AVG_LATENCY}ms（阈值 ${MAX_LATENCY_MS}ms），模型或网络慢" "cf-latency"
 fi
 
 # 模型请求错误
 if [ "$MODEL_ERRORS" -gt 0 ] 2>/dev/null; then
-  # 提取具体错误信息
   ERROR_DETAIL=$(grep -oP '\[model-fetch\].*status=[2-9][0-9][0-9][^"]*' "$RECENT" 2>/dev/null | tail -3 | tr '\n' ' ')
-  ALERTS+="⚠️ 模型请求错误 ×${MODEL_ERRORS}: ${ERROR_DETAIL:-无详情}
-"
-fi
-
-if [ -n "$ALERTS" ]; then
-  alert "$ALERTS"
+  alert "⚠️ 模型请求错误 ×${MODEL_ERRORS}: ${ERROR_DETAIL:-无详情}" "cf-model-err"
 fi
