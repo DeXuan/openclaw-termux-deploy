@@ -496,10 +496,11 @@ openclaw-termux-deploy/
 ├── lib/
 │   ├── common.sh                ← 共享库（UI 组件/设备配置/SSH）
 │   └── menus.sh                 ← TUI 菜单实现
-├── scripts/                     ← 所有脚本（18个，详见 scripts/README.md）
+├── scripts/                     ← 所有脚本（详见 scripts/README.md）
 │   ├── phone_install_openclaw.sh   ← 自动安装
 │   ├── phone_check_env.sh          ← 环境体检
 │   ├── phone_setup_service.sh      ← runit 服务配置
+│   ├── fleet-dashboard.sh          ← 机队日报
 │   ├── *-healthcheck.sh            ← 4台自愈互检
 │   ├── self-check.sh               ← 本地资源自检
 │   ├── backup-configs.sh           ← 配置定时备份
@@ -525,4 +526,4 @@ openclaw-termux-deploy/
 
 ---
 
-> **OpenClaw Deploy v1.0** · Made with ❤️ for the Android fleet
+> **OpenClaw Deploy v2.6** · Made with ❤️ for the Android fleet

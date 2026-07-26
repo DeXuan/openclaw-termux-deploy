@@ -23,7 +23,7 @@ PORTFOLIO = {
 STATE_FILE = os.path.expanduser("~/.fund-monitor-state.json")
 
 def fetch_one(code):
-    url = f"http://api.fund.eastmoney.com/f10/lsjz?fundCode={code}&pageIndex=1&pageSize=5"
+    url = f"https://api.fund.eastmoney.com/f10/lsjz?fundCode={code}&pageIndex=1&pageSize=5"
     req = urllib.request.Request(url, headers={"Referer": "https://fund.eastmoney.com"})
     try:
         d = json.loads(urllib.request.urlopen(req, timeout=10).read().decode("utf-8"))

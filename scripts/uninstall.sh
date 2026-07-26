@@ -3,7 +3,8 @@
 # 用法: cat uninstall.sh | ssh -p 8022 user@<IP> 'sh -'
 #       bash uninstall.sh --dry-run        # 预览不执行
 #       bash uninstall.sh --keep-config     # 保留配置文件
-set -e
+set -euo pipefail
+trap 'echo ""; echo "⚠ 卸载被中断 (Ctrl+C)"; echo "  当前状态已输出在上方，重新运行本脚本可继续（幂等）"; exit 130' INT TERM
 
 DRY_RUN=false
 KEEP_CONFIG=false

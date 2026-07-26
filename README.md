@@ -154,8 +154,8 @@ cat scripts/phone_check_env.sh | ssh -p 8022 u0_a129@<IP> 'sh -'
 | IP change alert | `check-ip.sh` | Every 10 min |
 | Mutual healthcheck | `healthcheck.sh` (per-device) | Every 5 min |
 | Daily report | `fleet-dashboard.sh` | 8:57 AM daily |
-| Fund NAV report | `fund-monitor.py` | 3:30 PM weekdays |
-| Fund weekly report | `fund-weekly.py` | Fri 10:00 PM |
+| Fund NAV report | `fund-monitor.py` | 3:30 PM weekdays | See `finance/` |
+| Fund weekly report | `fund-weekly.py` | Fri 10:00 PM | See `finance/` |
 | Config backup | `backup-configs.sh` | Sun 2:00 AM |
 | Version check | `check-version.sh` | Mon 10:37 AM |
 
@@ -178,8 +178,8 @@ openclaw-termux-deploy/
 │   ├── phone_check_env.sh          ← Environment diagnostic
 │   ├── phone_setup_service.sh      ← runit + boot setup
 │   ├── fleet-dashboard.sh          ← Daily Feishu report
-│   ├── fund-monitor.py             ← Fund NAV daily report
 │   └── ... (18 scripts total, see scripts/README.md)
+├── finance/                      ← Fund NAV/weekly/trade-signal scripts
 ├── docs/device-comparison.md    ← Fleet reference
 ├── skill/                       ← OpenClaw skill definitions
 │   ├── references/              ← Reference manuals

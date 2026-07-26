@@ -11,7 +11,7 @@ set -e
 
 echo ""
 echo "  ╔══════════════════════════════════════════╗"
-echo "  ║   OpenClaw Termux Deploy  v1.0.0        ║"
+echo "  ║   OpenClaw Termux Deploy  v2.6.0        ║"
 echo "  ║   One-command Android → AI server       ║"
 echo "  ╚══════════════════════════════════════════╝"
 echo ""

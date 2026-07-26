@@ -3,6 +3,11 @@
 # cron: */15 * * * * ~/channel-health.sh
 set -euo pipefail
 
+# 临时文件清理
+RECENT=""
+cleanup() { rm -f "$RECENT" 2>/dev/null; }
+trap cleanup INT TERM EXIT
+
 LOG=~/channel-health.log
 ALERT_LOG=~/channel-health.alert.log
 MAX_1006=10     # 15分钟内 WebSocket 1006 超过此次数告警

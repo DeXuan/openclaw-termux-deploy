@@ -3,6 +3,8 @@
 # 用法: cat phone_check_env.sh | ssh -p 8022 user@<IP> 'sh -'
 # 输出各项 [PASS]/[FAIL]/[SKIP]，FAIL 项附坑号与修复命令
 
+set -e
+
 echo "==== OpenClaw 机型环境体检 ===="
 
 # ── 1. 机型识别 ──

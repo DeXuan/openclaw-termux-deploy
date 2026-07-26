@@ -16,7 +16,7 @@
 6. [Watcher 守护进程](#6-watcher-守护进程)
 7. [额度管理面板](#7-额度管理面板)
 8. [开机自启配置](#8-开机自启配置)
-9. [踩坑速查（16条）](#9-踩坑速查)
+9. [踩坑速查（19条）](#9-踩坑速查)
 10. [运维命令速查](#10-运维命令速查)
 11. [文件结构](#11-文件结构)
 12. [版本更新记录](#12-版本更新记录)
@@ -329,7 +329,7 @@ ssh -p 8022 user@<IP> 'grep quota_watcher ~/.termux/boot/start-services.sh'
 
 ## 9. 踩坑速查
 
-完整版见 [references/pitfalls.md](references/pitfalls.md)，以下为最常见 6 条：
+完整版见下方 [§9 踩坑速查](#9-踩坑速查)，以下为最常见 6 条：
 
 ### 坑 1：403 → auth 全局污染
 
@@ -423,8 +423,6 @@ bailian-quota-switcher/
 │   ├── quota_watcher.sh     ← 守护进程 v2（403/400/401 全覆盖）
 │   ├── quota_manager.sh     ← 额度面板 + 手动管理
 │   └── phone_check_env.sh   ← 环境体检（机型/Node/SQLite/服务/渠道）
-└── references/
-    └── pitfalls.md          ← 16 条踩坑详情
 ```
 
 | 文件 | 大小 | 所在位置 |
@@ -465,7 +463,7 @@ bailian-quota-switcher/
 - **新增**：crash-loop breaker 自动清理
 - **修复**：config 路径错误（`models.*` → `agents.defaults.model.*`）
 - **修复**：Key `$K` 字面量问题（改用文件传递）
-- **补充**：16 条踩坑速查
+- **补充**：19 条踩坑速查
 
 ### v1.0 (2026-07-21)
 
@@ -483,7 +481,7 @@ bailian-quota-switcher/
 
 ---
 
-# 踩坑速查（16 条）
+# 踩坑速查（19 条）
 
 ## 核心坑
 

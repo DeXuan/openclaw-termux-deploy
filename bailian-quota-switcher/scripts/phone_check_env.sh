@@ -2,6 +2,9 @@
 # 机型环境体检（手机 Termux 侧执行，只读不改，幂等）
 # 用法: cat phone_check_env.sh | ssh -p 8022 user@<IP> 'sh -'
 # 输出各项 [PASS]/[FAIL]/[SKIP]，FAIL 项附坑号与修复命令
+# ⚠️ 同步约定：修改此文件时同步更新 skill/scripts/ 和 scripts/ 下的副本
+
+set -e
 
 echo "==== OpenClaw 机型环境体检 ===="
 
@@ -107,7 +110,7 @@ else
 fi
 
 # ── 8. 渠道探活 ──
-GLOG=$(ls -t /data/data/com.termux/files/usr/tmp/openclaw-*/openclaw-2026-07-*.log 2>/dev/null | head -1)
+GLOG=$(ls -t "$PREFIX/tmp/openclaw-"*/openclaw-20*.log 2>/dev/null | head -1)
 if [ -n "$GLOG" ] && [ -f "$GLOG" ]; then
   # QQ bot
   QQ_READY=$(grep -c "qqbot.*Gateway ready" "$GLOG" 2>/dev/null || echo 0)

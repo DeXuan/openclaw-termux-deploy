@@ -9,6 +9,7 @@
 | `phone_install_openclaw.sh` | 手机 Termux（SSH 管道） | 安装 Node.js + OpenClaw + 编译依赖，含坑17/18合规预检 |
 | `phone_setup_service.sh` | 手机 Termux（SSH 管道） | 配置 runit 保活 + Termux:Boot 开机自启 + 坑25 shebang 修复 |
 | `phone_check_env.sh` | 手机 Termux（SSH 管道） | 一键体检：机型/Node/SQLite/OpenClaw/自启链/服务/渠道 |
+| `uninstall.sh` | 手机 Termux（SSH 管道） | 6步卸载：停服务→清crontab→清脚本→清boot→npm卸载→配置（支持 --dry-run / --keep-config） |
 
 ```bash
 # 典型部署流程
@@ -44,6 +45,8 @@ ssh user@<IP> '(crontab -l 2>/dev/null; echo "*/5 * * * * ~/healthcheck.sh") | c
 | `check-ip.sh` | IPv4 出口漂移检测 → 飞书告警 | */10 |
 | `check-version.sh` | npm 扫描 OpenClaw 新版本 → 飞书告警 | 周一 10:37 |
 | `backup-configs.sh` | 四设备配置拉取备份到 K60（tar.gz，30天保留） | 周日 02:00 |
+| `channel-health.sh` | 渠道巡检：grep gateway 日志检测 QQ/飞书/微信连通性 + 1006/401 告警 | */15 |
+| `rolling-upgrade.sh` | 金丝雀升级：preflight→canary(Note7)→逐台升级→摘要（支持 --dry-run） | 手动 |
 
 ## 🔧 基础设施
 
@@ -54,6 +57,8 @@ ssh user@<IP> '(crontab -l 2>/dev/null; echo "*/5 * * * * ~/healthcheck.sh") | c
 | `termux-boot_start-openclaw.sh` | Termux:Boot 启动脚本模板 |
 
 ## 💰 金融插件
+
+> 已移至 [`../finance/`](../finance/) 目录。详见 [`finance/README.md`](../finance/README.md)。
 
 | 脚本 | 用途 | 频率 |
 |------|------|------|
@@ -67,3 +72,4 @@ ssh user@<IP> '(crontab -l 2>/dev/null; echo "*/5 * * * * ~/healthcheck.sh") | c
 - `../lib/menus.sh` — TUI 菜单实现
 - `../skill/scripts/` — 技能引用副本（与 scripts/ 同步）
 - `../bailian-quota-switcher/scripts/` — 百炼额度管理脚本
+- `../finance/` — 金融分析脚本（基金日报/周报/交易信号）

@@ -1,17 +1,18 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# 百炼免费额度耗尽自动切换守护 v2
-# 修复: 检测400/401/403 + crash-loop breaker自动清理 + 启动验证
+# 百炼免费额度耗尽自动切换守护 v2.1
+# 修复: 检测400/401/403 + crash-loop breaker自动清理 + 启动验证 + set -euo pipefail
 # 部署: cat quota_watcher.sh | ssh user@<IP> 'cat > ~/quota_watcher.sh && chmod +x ~/quota_watcher.sh'
 # 启动: nohup bash ~/quota_watcher.sh > ~/watcher.log 2>&1 &
 # 前提: ~/bailian_key.txt 存放百炼 API Key
+set -euo pipefail
+
+: "${PREFIX:?PREFIX not set — source Termux profile first}"
 
 LOG_FILE="$PREFIX/var/log/sv/openclaw/current"
 KEY_FILE="$HOME/bailian_key.txt"
 STABILITY_DIR="$HOME/.openclaw/logs/stability"
 LAST_SWITCH=0
 COOLDOWN=30
-
-echo "[watcher] $(date +%H:%M:%S) started, pid=$$"
 
 echo "[watcher] $(date +%H:%M:%S) started, pid=$$"
 

@@ -5,7 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] — 2026-07-26
+## [2.6.0] — 2026-07-26
+
+### Added (P3–P4 工具箱扩展)
+- 🗑️ `scripts/uninstall.sh` — 6-step uninstall: stop→crontab→scripts→boot→npm→config, `--dry-run` / `--keep-config`
+- 📡 `scripts/channel-health.sh` — grep-based channel monitor (QQ/Feishu/WeChat), `safe_count()` sanitizer, per-channel alert thresholds
+- 🚀 `scripts/rolling-upgrade.sh` — canary deployment: preflight→canary(Note7)→sequential→summary, `--dry-run`
+- 💾 `scripts/backup-configs.sh` — fleet-wide config backup to K60 (tar.gz, 30-day retention)
+- 🛡️ `scripts/self-check.sh` — memory/disk/swap threshold protection + auto-cleanup + gateway restart
+- 🔍 `scripts/check-ip.sh` — IPv4 egress drift detection → Feishu alert
+- 📦 `scripts/check-version.sh` — weekly npm scan for new OpenClaw versions
+- 🧪 `tests/test_feishu_push.py` — 8 unit tests for unified push module
+- 🔄 `.github/workflows/smoke-test.yml` — CI: bash -n + py_compile + 6-part consistency check
+
+### Changed (P3–P4)
+- `lib/menus.sh`: 4-device dashboard with parallel SSH probes, full-fleet check/update/self-heal menus
+- `openclaw-deploy`: `--all` flag for service/logs/check commands, fixed `local` variable bugs
+- `scripts/phone_check_env.sh`: hardcoded `/data/data/…/tmp` → `$PREFIX/tmp`, date pattern year-agnostic
+- 4 healthcheck scripts: `--connect-timeout 3` on all curl calls, IP source-of-truth comments
+- `scripts/phone_setup_service.sh`: idempotency for all 5 steps, OPENCLAW_MJS resolved before check
+- `scripts/backup-configs.sh`: fixed `cp ~/ $f` → `cp ~/"$f"` space bug
+- `scripts/rolling-upgrade.sh`: TARGET_VERSION moved after arg parsing, `/tmp` → `$HOME`
+- `scripts/channel-health.sh`: `date -d` → `tail -500` for Termux compatibility
+- Pitfall count: 24 → 25 (`skill/SKILL.md`, `skill/references/device-matrix.md`, `skill/references/pitfalls.md`)
+
+### Added (P0–P2 本轮优化)
+- `finance/` directory: fund-monitor, fund-weekly, trade-signal-scanner separated from deploy toolbox
+- `finance/README.md`: standalone documentation for financial scripts
+- `config/` and `finance/` added to project structure docs
+
+### Changed (P0–P2)
+- **Error handling upgraded**: `phone_install_openclaw.sh`, `phone_setup_service.sh`, `uninstall.sh` → `set -euo pipefail` + trap
+- **bailian-quota-switcher hardened**: `quota_watcher.sh`, `quota_manager.sh`, `deploy.sh` → `set -euo pipefail` + PREFIX guards
+- **bailian phone_check_env.sh**: path/date pattern synced with canonical version
+- `quota_watcher.sh`: removed duplicate startup echo line
+- `channel-health.sh`: trap INT TERM EXIT for temp file cleanup
+- `install.sh`: version banner `v1.0.0` → `v2.6.0`
+- `scripts/README.md`: added `uninstall.sh`, `channel-health.sh`, `rolling-upgrade.sh`
+- `fund-*.py` / `trade-signal-scanner.py`: HTTP → HTTPS for all API calls
+- skill/scripts/ copies: synced with canonical scripts/ (set -euo pipefail consistency)
+
+### Fixed
+- Deprecated `deepseek-chat`/`deepseek-reasoner` model references → `deepseek-v4-flash`/`v4-pro`
 
 ### Added
 - ⚡ One-line installer: `curl -fsSL ... | bash` with 6-step auto-deploy
@@ -96,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[2.6.0]: https://github.com/DeXuan/openclaw-termux-deploy/releases/tag/v2.6.0
 [1.0.0]: https://github.com/DeXuan/openclaw-termux-deploy/releases/tag/v1.0.0
 [0.9.0]: https://github.com/DeXuan/openclaw-termux-deploy/releases/tag/v0.9.0
 [0.5.0]: https://github.com/DeXuan/openclaw-termux-deploy/releases/tag/v0.5.0

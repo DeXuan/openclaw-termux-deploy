@@ -2,7 +2,7 @@
 # 一键部署百炼免费模型 + watcher 到多台 Termux 设备 v2.2
 # 用法: export BAILIAN_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; bash deploy.sh
 #        (百炼控制台 → 模型广场 → API-KEY 管理 → 创建)
-set -e
+set -euo pipefail
 
 PLACEHOLDER="__YOUR_BAILIAN_API_KEY__"
 API_KEY="${BAILIAN_KEY:-$PLACEHOLDER}"

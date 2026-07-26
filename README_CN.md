@@ -151,8 +151,8 @@ cat scripts/phone_check_env.sh | ssh -p 8022 u0_a129@<IP> 'sh -'
 | IP 变更告警 | `check-ip.sh` | 每 10 分钟 |
 | 双向互检 | `healthcheck.sh`（每台设备） | 每 5 分钟 |
 | 每日机队日报 | `fleet-dashboard.sh` | 每天 8:57 |
-| 基金净值日报 | `fund-monitor.py` | 交易日 15:30 |
-| 基金周报 | `fund-weekly.py` | 周五 22:00 |
+| 基金净值日报 | `fund-monitor.py` | 交易日 15:30 | 见 `finance/` |
+| 基金周报 | `fund-weekly.py` | 周五 22:00 | 见 `finance/` |
 | 配置备份 | `backup-configs.sh` | 周日 02:00 |
 | 版本检测 | `check-version.sh` | 周一 10:37 |
 

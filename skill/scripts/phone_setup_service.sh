@@ -6,7 +6,7 @@
 # 修改服务配置时请同步更新：
 #   - install.sh                       (自包含 curl-pipe 入口，内联了 runit 逻辑)
 #   - skill/scripts/phone_setup_service.sh (技能引用副本)
-set -e
+set -euo pipefail
 
 # 坑10：Termux:Boot 环境 PATH 无 npm 全局目录，必须解析绝对路径
 OPENCLAW_BIN=$(command -v openclaw)

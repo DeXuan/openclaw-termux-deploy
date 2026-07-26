@@ -1,6 +1,9 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# 百炼免费模型额度管理器
+# 百炼免费模型额度管理器 v2.1
 # 用法: bash ~/quota_manager.sh [status|switch|deplete <model>|update <model> <tokens>]
+set -euo pipefail
+
+: "${PREFIX:?PREFIX not set — source Termux profile first}"
 
 QUOTA_FILE="$HOME/.openclaw/free_quota.json"
 CONFIG_FILE="$HOME/.openclaw/openclaw.json"

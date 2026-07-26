@@ -21,7 +21,7 @@ STATE_FILE  = os.path.expanduser("~/.trade-signal-state.json")
 
 def fetch():
     codes = ','.join(WATCHLIST.keys())
-    resp = urllib.request.urlopen(f'http://qt.gtimg.cn/q={codes}', timeout=10).read()
+    resp = urllib.request.urlopen(f'https://qt.gtimg.cn/q={codes}', timeout=10).read()
     try: text = resp.decode('gbk')
     except (UnicodeDecodeError, LookupError): text = resp.decode('utf-8', errors='replace')
     stocks = {}

@@ -6,7 +6,7 @@
 # 修改安装逻辑时请同步更新：
 #   - install.sh                          (自包含 curl-pipe 入口)
 #   - skill/scripts/phone_install_openclaw.sh (技能引用副本)
-set -e
+set -euo pipefail
 
 # 中断清理提示
 cleanup_install() {
