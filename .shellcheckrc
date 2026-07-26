@@ -1,0 +1,11 @@
+# ShellCheck 项目级配置
+# 用法: shellcheck 自动读取本文件，或显式指定: shellcheck --rcfile .shellcheckrc scripts/*.sh
+
+# SC2034: 变量未使用但被 sourcing 脚本引用
+#   lib/common.sh 的 C_*/BOX_*/ICO_* 变量和 DEVICES 数组被 menus.sh 和 openclaw-deploy source
+#   使用，ShellCheck 无法跨文件检测
+disable=SC2034
+
+# SC2154: 变量未赋值但由 source 提供
+#   与 SC2034 同理，source 链中的变量引用无法静态追踪
+disable=SC2154

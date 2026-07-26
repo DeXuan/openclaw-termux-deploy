@@ -1,15 +1,18 @@
 #!/data/data/com.termux/files/usr/bin/sh
-# OpenClaw runit run 脚本模板
-# 自动部署请用 phone_setup_service.sh（含坑 25 shebang 修复），本文件仅作手动参考
+# OpenClaw runit run 脚本 — 手工参考模板
+#
+# ⚠️ 本文件仅作理解 runit 服务结构的手工参考。
+# 实际部署会由 phone_setup_service.sh 动态生成 run 脚本（含坑25 shebang 修复 +
+# 低内存机型 --max-old-space-size 自适应）。
+# 生产环境请勿直接使用本模板，应走: cat phone_setup_service.sh | ssh ... 'sh -'
+#
+# 生成逻辑对应关系:
+#   install.sh [5/6]        → 内联生成 run 脚本（curl-pipe 自包含）
+#   phone_setup_service.sh  → SSH 管道生成（canonical，含坑25修复）
 exec 2>&1
-# 坑14：QQ 等平台 IP 白名单只支持 IPv4，强制 Node 优先走 IPv4 出口
+# 坑14：QQ 等平台 IP 白名单只支持 IPv4
 export NODE_OPTIONS="--dns-result-order=ipv4first"
 
-# 坑25：不要直接 exec openclaw 命令（npm symlink → .mjs，shebang "#!/usr/bin/env node"
-# 在 Android/Termux 内核 exec 时找不到 /usr/bin/env → "not found"）
-# 必须显式调 node + .mjs 真实路径。常见路径：
-#   标准 Termux：/data/data/com.termux/files/usr/lib/node_modules/openclaw/openclaw.mjs
-#   K60（~/.npm-global）：$HOME/.npm-global/lib/node_modules/openclaw/openclaw.mjs
-# 不确定时：npm root -g → 拼接 /openclaw/openclaw.mjs
-
+# 坑25：必须显式调 node + .mjs 绝对路径
+# npm root -g → /data/data/com.termux/files/usr/lib/node_modules/openclaw/openclaw.mjs
 exec /data/data/com.termux/files/usr/bin/node /data/data/com.termux/files/usr/lib/node_modules/openclaw/openclaw.mjs gateway

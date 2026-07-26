@@ -1,6 +1,11 @@
 #!/data/data/com.termux/files/usr/bin/sh
 # OpenClaw runit 服务 + Termux:Boot 启动脚本配置（手机 Termux 侧执行，幂等可重跑）
 # 用法: cat phone_setup_service.sh | ssh -p 8022 user@<IP> 'sh -'
+#
+# ⚠️ 同步约定：本文件是 runit+boot 配置的 canonical 版本（scripts/ 目录）。
+# 修改服务配置时请同步更新：
+#   - install.sh                       (自包含 curl-pipe 入口，内联了 runit 逻辑)
+#   - skill/scripts/phone_setup_service.sh (技能引用副本)
 set -e
 
 # 坑10：Termux:Boot 环境 PATH 无 npm 全局目录，必须解析绝对路径

@@ -1,8 +1,22 @@
 #!/data/data/com.termux/files/usr/bin/sh
-# Canonical: scripts/phone_install_openclaw.sh — sync from there
 # OpenClaw 安装脚本（手机 Termux 侧执行，幂等可重跑）
 # 用法: cat phone_install_openclaw.sh | ssh -p 8022 user@<IP> 'sh -'
+#
+# ⚠️ 同步约定：本文件是 SSH 管道安装的 canonical 版本。
+# 修改安装逻辑时请同步更新：
+#   - install.sh                          (自包含 curl-pipe 入口)
+#   - skill/scripts/phone_install_openclaw.sh (技能引用副本)
 set -e
+
+# 中断清理提示
+cleanup_install() {
+  echo ""
+  echo "⚠ 安装被中断 (Ctrl+C)"
+  echo "  已安装的依赖包不会回滚 (pkg install 已完成)"
+  echo "  重新运行本脚本可继续 (幂等)"
+  exit 130
+}
+trap cleanup_install INT TERM
 
 echo "==> [1/5] 安装基础依赖与编译工具链"
 pkg update -y >/dev/null 2>&1 || pkg update -y

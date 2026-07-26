@@ -5,12 +5,18 @@ on:
     paths:
       - '**.sh'
       - 'openclaw-deploy'
+      - 'install.sh'
       - 'lib/**'
+      - 'scripts/**'
+      - 'bailian-quota-switcher/scripts/**'
   pull_request:
     paths:
       - '**.sh'
       - 'openclaw-deploy'
+      - 'install.sh'
       - 'lib/**'
+      - 'scripts/**'
+      - 'bailian-quota-switcher/scripts/**'
 
 jobs:
   shellcheck:
@@ -23,5 +29,4 @@ jobs:
         with:
           ignore_paths: >-
             skill-formatter
-            bailian-quota-switcher
           severity: error
