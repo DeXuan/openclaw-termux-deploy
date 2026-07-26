@@ -182,8 +182,8 @@ run_wizard_remote() {
   clear
   echo -e "${C_CYAN}${C_BOLD}  🚀 远程部署向导${C_RESET}\n"
 
-  read -r -p "$(echo -e "  ${C_BOLD}目标设备 IP 或名称${C_RESET} ${C_DIM}(K60/Note7/MIX2S/Note4X 或 IP)${C_RESET}: ")" target
-  [ -z "$target" ] && { show_menu; return; }
+  read -r -p "$(echo -e "  ${C_BOLD}目标设备 IP 或名称${C_RESET} ${C_DIM}(K60/Note7/MIX2S/Note4X 或 IP，0=返回)${C_RESET}: ")" target
+  [ -z "$target" ] || [ "$target" = "0" ] && { show_menu; return; }
 
   local conn_user="u0_a129" conn_host="$target" conn_port="8022"
   case "$target" in
@@ -239,9 +239,10 @@ deploy_menu() {
 
   case "$choice" in
     a|A)
-      read -r -p "  ${C_BOLD}设备${C_RESET} ${C_DIM}(K60/Note7/MIX2S/Note4X 或 IP)${C_RESET}: " target
-      [ -z "$target" ] && { show_menu; return; }
-      read -r -p "  ${C_BOLD}用户${C_RESET} ${C_DIM}[u0_a129]${C_RESET}: " ssh_user
+      read -r -p "  ${C_BOLD}设备${C_RESET} ${C_DIM}(K60/Note7/MIX2S/Note4X 或 IP，0=返回)${C_RESET}: " target
+      [ -z "$target" ] || [ "$target" = "0" ] && { show_menu; return; }
+      read -r -p "  ${C_BOLD}用户${C_RESET} ${C_DIM}[u0_a129，0=返回]${C_RESET}: " ssh_user
+      [ "$ssh_user" = "0" ] && { show_menu; return; }
       ssh_user="${ssh_user:-u0_a129}"
       confirm "确认部署到 $target？将安装 Node.js + OpenClaw + runit" || { show_menu; return; }
       log_step "远程部署 → $target"
@@ -395,7 +396,7 @@ service_menu() {
       local gw; gw=$(check_gateway)
       echo -e "  Gateway: $( [ "$gw" = "200" ] && pill_ok || pill_off )"
       ;;
-    3) log_step "实时日志 (Ctrl+C 退出)"; tail -f "$PREFIX/var/log/sv/openclaw/current" 2>/dev/null || log_fail "日志不可用" ;;
+    3) log_step "实时日志 (Ctrl+C 返回菜单)"; tail -f "$PREFIX/var/log/sv/openclaw/current" 2>/dev/null || log_fail "日志不可用" ;;
     4)
       confirm "确认重启 K60 gateway？" || { show_menu; return; }
       ssh_device K60 'export SVDIR=$PREFIX/var/service && sv restart openclaw' && log_ok "K60 已重启" || log_fail "失败"
@@ -424,7 +425,8 @@ selfheal_menu() {
   case "$choice" in
     1) install_selfheal_local ;;
     2)
-      echo; echo -e "  ${C_BOLD}目标:${C_RESET} [1] K60  [2] Note 7  [3] MIX 2S  [4] Note 4X  [5] 全部"; read -r -p "  > " dc
+      echo; echo -e "  ${C_BOLD}目标:${C_RESET} [1] K60  [2] Note 7  [3] MIX 2S  [4] Note 4X  [5] 全部  [0] 返回"; read -r -p "  > " dc
+      [ "$dc" = "0" ] && { show_menu; return; }
       case "$dc" in
         1) install_selfheal_remote K60 k60-healthcheck.sh ;;
         2) install_selfheal_remote Note7 note7-healthcheck.sh ;;
@@ -482,8 +484,10 @@ check_selfheal_status() {
 }
 
 view_selfheal_logs() {
-  echo; echo -e "  ${C_BOLD}日志类型:${C_RESET} [1] healthcheck  [2] self-check  [3] alert  [4] last_restart"; read -r -p "  > " lc
-  echo -e "  ${C_BOLD}设备:${C_RESET} [1] K60  [2] Note 7  [3] MIX 2S  [4] Note 4X"; read -r -p "  > " dc
+  echo; echo -e "  ${C_BOLD}日志类型:${C_RESET} [1] healthcheck  [2] self-check  [3] alert  [4] last_restart  [0] 返回"; read -r -p "  > " lc
+  [ "$lc" = "0" ] && { show_menu; return; }
+  echo -e "  ${C_BOLD}设备:${C_RESET} [1] K60  [2] Note 7  [3] MIX 2S  [4] Note 4X  [0] 返回"; read -r -p "  > " dc
+  [ "$dc" = "0" ] && { show_menu; return; }
   local dev; case "$dc" in 1) dev="K60" ;; 2) dev="Note7" ;; 3) dev="MIX2S" ;; 4) dev="Note4X" ;; *) dev="K60" ;; esac
   echo
   case "$lc" in
@@ -510,9 +514,11 @@ skills_menu() {
   case "$choice" in
     1) openclaw skills list 2>/dev/null | head -80 || log_fail "openclaw 未运行" ;;
     2)
-      read -r -p "  ${C_BOLD}搜索${C_RESET}: " kw
+      read -r -p "  ${C_BOLD}搜索${C_RESET} ${C_DIM}(0=返回)${C_RESET}: " kw
+      [ "$kw" = "0" ] && { show_menu; return; }
       [ -n "$kw" ] && openclaw skills search "$kw" 2>/dev/null
-      echo; read -r -p "  ${C_BOLD}安装 slug${C_RESET} ${C_DIM}(留空跳过)${C_RESET}: " slug
+      echo; read -r -p "  ${C_BOLD}安装 slug${C_RESET} ${C_DIM}(留空跳过，0=返回)${C_RESET}: " slug
+      [ "$slug" = "0" ] && { show_menu; return; }
       [ -n "$slug" ] && { spinner_start "安装 $slug..."; openclaw skills install "$slug" 2>/dev/null; spinner_stop; }
       ;;
     3)
@@ -712,7 +718,8 @@ deploy_qqbot() {
   echo -e "  ${C_DIM}   沙箱配置 → 加自己 QQ 号为测试用户${C_RESET}"
   echo -e "  ${C_DIM}   IP 白名单 → 加: $(curl -4 -s --connect-timeout 5 https://api.ip.sb/ip 2>/dev/null || echo '查失败')${C_RESET}"
   echo
-  read -r -p "$(echo -e "  ${C_BOLD}AppID:AppSecret${C_RESET} ${C_DIM}(如 123456:abcdef)${C_RESET}: ")" qq_token
+  read -r -p "$(echo -e "  ${C_BOLD}AppID:AppSecret${C_RESET} ${C_DIM}(如 123456:abcdef，0=返回)${C_RESET}: ")" qq_token
+  [ "$qq_token" = "0" ] && { show_menu; return; }
   if [ -n "$qq_token" ]; then
     openclaw channels add --channel qqbot --token "$qq_token" 2>&1 | tail -3
     log_ok "QQ 渠道已添加"
@@ -740,7 +747,8 @@ deploy_feishu() {
   echo -e "  ${C_DIM}📱 飞书开放平台 → 企业自建应用 → 机器人 → WebSocket 长连接${C_RESET}"
   echo -e "  ${C_DIM}   无 IP 白名单限制，全队最省心${C_RESET}"
   echo
-  read -r -p "$(echo -e "  ${C_BOLD}AppID:AppSecret${C_RESET} ${C_DIM}(如 cli_xxx:yyy)${C_RESET}: ")" fs_token
+  read -r -p "$(echo -e "  ${C_BOLD}AppID:AppSecret${C_RESET} ${C_DIM}(如 cli_xxx:yyy，0=返回)${C_RESET}: ")" fs_token
+  [ "$fs_token" = "0" ] && { show_menu; return; }
   if [ -n "$fs_token" ]; then
     openclaw channels add --channel feishu --token "$fs_token" 2>&1 | tail -3
     log_ok "飞书渠道已添加"
