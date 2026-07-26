@@ -5,6 +5,7 @@
 set -euo pipefail
 
 # ═══ Color Palette (Catppuccin-inspired) ═══
+# shellcheck disable=SC2034  # colors/boxes used by sourcing scripts, ShellCheck can't detect
 C_RESET='\033[0m'
 C_BOLD='\033[1m'
 C_DIM='\033[2m'

@@ -360,7 +360,7 @@ service_menu() {
 
   case "$choice" in
     1)
-      local gw=$(check_gateway)
+      local gw; gw=$(check_gateway)
       printf "\n  Gateway: %s" "$gw"
       [ "$gw" = "200" ] && echo -e "  $(pill_ok)" || echo -e "  $(pill_off)"
       if is_termux; then
@@ -375,7 +375,7 @@ service_menu() {
       export SVDIR="$PREFIX/var/service"
       sv restart openclaw 2>/dev/null && log_ok "已重启" || log_fail "重启失败"
       sleep 3
-      local gw=$(check_gateway)
+      local gw; gw=$(check_gateway)
       echo -e "  Gateway: $( [ "$gw" = "200" ] && pill_ok || pill_off )"
       ;;
     3) log_step "实时日志 (Ctrl+C 退出)"; tail -f "$PREFIX/var/log/sv/openclaw/current" 2>/dev/null || log_fail "日志不可用" ;;
@@ -451,7 +451,7 @@ check_selfheal_status() {
     fi
     ssh_device "$dev" '[ -x ~/healthcheck.sh ]' 2>/dev/null && echo -e "  healthcheck: $(pill_ok)" || echo -e "  healthcheck: $(pill_off)"
     ssh_device "$dev" '[ -x ~/self-check.sh ]' 2>/dev/null && echo -e "  self-check:  $(pill_ok)" || echo -e "  self-check:  $(pill_off)"
-    local stamp; stamp=$(ssh_device "$dev" 'cat ~/healthcheck.last_restart 2>/dev/null' || echo "—")
+    local stamp; stamp=$(ssh_device "$dev" "cat ~/healthcheck.last_restart 2>/dev/null" || echo "—")
     echo -e "  ${C_DIM}上次重启: $stamp${C_RESET}"
     ssh_device "$dev" 'crontab -l 2>/dev/null' | while read -r l; do echo -e "  ${C_DIM}cron: $l${C_RESET}"; done
   done
@@ -734,7 +734,7 @@ deploy_weixin() {
     2)
       nohup openclaw channels login --channel openclaw-weixin > ~/wx-login.log 2>&1 &
       sleep 10
-      local link=$(grep -o "https://liteapp.weixin.qq.com[^[:space:]]*" ~/wx-login.log 2>/dev/null | tail -1)
+      local link; link=$(grep -o "https://liteapp.weixin.qq.com[^[:space:]]*" ~/wx-login.log 2>/dev/null | tail -1)
       if [ -n "$link" ]; then
         echo -e "\n  ${C_GREEN}🔗${C_RESET} ${C_CYAN}${link}${C_RESET}"
         echo -e "  ${C_DIM}复制到微信打开，1-2 分钟过期${C_RESET}"
