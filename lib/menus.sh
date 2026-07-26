@@ -582,8 +582,10 @@ update_menu() {
   menu_item "1" "⬆"  "本机更新 OpenClaw"  "npm install -g openclaw@latest"
   menu_item "2" "🔥" "更新 K60 OpenClaw"  "SSH 远程升级"
   menu_item "3" "🍃" "更新 N7 OpenClaw"   "SSH 远程升级"
-  menu_item "4" "🚀" "滚动升级全队"       "金丝雀流程：逐台升→验证→推全队"
-  menu_item "5" "🔧" "更新本工具箱"       "git pull 最新版"
+  menu_item "4" "⚡" "更新 MIX2S OpenClaw""SSH 远程升级"
+  menu_item "5" "🪨" "更新 Note4X OpenClaw""SSH 远程升级"
+  menu_item "6" "🚀" "滚动升级全队"       "金丝雀流程：逐台升→验证→推全队"
+  menu_item "7" "🔧" "更新本工具箱"       "git pull 最新版"
   echo -e "  ${C_BOLD}[0]${C_RESET} 返回"
   echo
   read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" choice
@@ -605,12 +607,20 @@ update_menu() {
       ssh_device Note7 'GYP_DEFINES="android_ndk_path=" npm install -g --allow-scripts openclaw@latest && openclaw --version' && log_ok "N7 已升级" || log_fail "失败"
       ;;
     4)
-      confirm "滚动升级全队 (金丝雀: Note7 → K60 → MIX2S → Note4X)？" || { show_menu; return; }
-      log_step "启动滚动升级..."
-      bash "$SCRIPT_DIR/scripts/rolling-upgrade.sh" "${TARGET_VERSION:-latest}" 2>&1 | tail -40
-      log_ok "滚动升级完成，详情见 /tmp/openclaw-upgrade-*.log"
+      confirm "确认升级 MIX 2S？" || { show_menu; return; }
+      ssh_device MIX2S 'GYP_DEFINES="android_ndk_path=" npm install -g --allow-scripts openclaw@latest && openclaw --version' && log_ok "MIX2S 已升级" || log_fail "失败"
       ;;
     5)
+      confirm "确认升级 Note 4X？" || { show_menu; return; }
+      ssh_device Note4X 'GYP_DEFINES="android_ndk_path=" npm install -g --allow-scripts openclaw@latest && openclaw --version' && log_ok "Note4X 已升级" || log_fail "失败"
+      ;;
+    6)
+      confirm "滚动升级全队 (金丝雀: Note7 → K60 → MIX2S → Note4X)？" || { show_menu; return; }
+      log_step "启动滚动升级..."
+      bash "$SCRIPT_DIR/scripts/rolling-upgrade.sh" 2>&1 | tail -40
+      log_info "滚动升级完成，详情见 ~/openclaw-upgrade-*.log"
+      ;;
+    7)
       log_step "git pull..."
       cd "$SCRIPT_DIR" && git pull 2>&1 | tail -3 && log_ok "工具箱已更新" || log_fail "更新失败"
       ;;
