@@ -16,13 +16,11 @@ echo "==> openclaw 绝对路径: $OPENCLAW_BIN"
 echo "==> [1/5] 解析 openclaw.mjs 路径 + 修复 shebang/env 陷阱（坑25）"
 # 坑25：Android/Termux 没有 /usr/bin/env，npm 全局 bin symlink → .mjs 的
 # shebang "#!/usr/bin/env node" 在内核 exec() 时找不到解释器 → "not found"
-# （交互 shell 的 bash 会自行处理 shebang 所以 which/直接调都正常，极具迷惑性）
-# 解法：① 用 npm root -g 定位 .mjs 真实路径，run 脚本直接调 node
-#       ② 把 npm 的 symlink 替换为 bash wrapper，全局修复 openclaw 命令
+
+# 始终解析 OPENCLAW_MJS（后续步骤需要）
 NPM_ROOT=$(npm root -g)
 OPENCLAW_MJS="$NPM_ROOT/openclaw/openclaw.mjs"
 if [ ! -f "$OPENCLAW_MJS" ]; then
-  # fallback：从 symlink 解析（兼容 npm 不同目录布局）
   OPENCLAW_LINK=$(ls -l "$OPENCLAW_BIN" | awk -F' -> ' '{print $2}')
   OPENCLAW_DIR=$(dirname "$OPENCLAW_BIN")
   OPENCLAW_MJS="$OPENCLAW_DIR/$OPENCLAW_LINK"
@@ -30,8 +28,10 @@ fi
 [ -f "$OPENCLAW_MJS" ] || { echo "错误: 无法定位 openclaw.mjs（$OPENCLAW_MJS）"; exit 1; }
 echo "    openclaw.mjs = $OPENCLAW_MJS"
 
-# 替换 npm symlink → bash wrapper（根治 shebang 问题，MIX 2S 2026-07-20 已验证）
-if [ -L "$OPENCLAW_BIN" ]; then
+# 幂等：已修复为 bash wrapper 则跳过 shebang 修复
+if [ ! -L "$OPENCLAW_BIN" ] && head -1 "$OPENCLAW_BIN" 2>/dev/null | grep -q "bash"; then
+  echo "    openclaw 已是 bash wrapper，跳过 shebang 修复"
+elif [ -L "$OPENCLAW_BIN" ]; then
   rm "$OPENCLAW_BIN"
   cat > "$OPENCLAW_BIN" <<WRAPPEREOF
 #!/data/data/com.termux/files/usr/bin/bash
@@ -42,7 +42,14 @@ WRAPPEREOF
 fi
 
 echo "==> [2/5] 创建 runit 服务"
-mkdir -p "$PREFIX/var/service/openclaw/log"
+# 幂等：服务目录已存在则跳过创建，但确保 run 脚本内容最新
+if [ -d "$PREFIX/var/service/openclaw" ]; then
+  echo "    runit 服务已存在，更新 run 脚本..."
+else
+  mkdir -p "$PREFIX/var/service/openclaw/log"
+  ln -sf "$PREFIX/share/termux-services/svlogger" "$PREFIX/var/service/openclaw/log/run"
+  echo "    runit 服务目录已创建"
+fi
 cat > "$PREFIX/var/service/openclaw/run" <<EOF
 #!/data/data/com.termux/files/usr/bin/sh
 exec 2>&1
@@ -51,28 +58,52 @@ export NODE_OPTIONS="--dns-result-order=ipv4first"
 exec $PREFIX/bin/node $OPENCLAW_MJS gateway
 EOF
 chmod +x "$PREFIX/var/service/openclaw/run"
-ln -sf "$PREFIX/share/termux-services/svlogger" "$PREFIX/var/service/openclaw/log/run"
 
 echo "==> [3/5] 创建 Termux:Boot 开机脚本（wake-lock + sshd + 服务群）"
-mkdir -p ~/.termux/boot
-cat > ~/.termux/boot/start-services.sh <<'EOF'
+# 幂等：boot 脚本已存在且内容正确则跳过
+BOOT_EXPECTED='#!/data/data/com.termux/files/usr/bin/sh
+termux-wake-lock
+sshd
+. /data/data/com.termux/files/usr/etc/profile.d/start-services.sh'
+if [ -f ~/.termux/boot/start-services.sh ] && \
+   [ "$(cat ~/.termux/boot/start-services.sh 2>/dev/null)" = "$BOOT_EXPECTED" ]; then
+  echo "    boot 脚本已存在且内容正确，跳过"
+else
+  mkdir -p ~/.termux/boot
+  cat > ~/.termux/boot/start-services.sh <<'EOF'
 #!/data/data/com.termux/files/usr/bin/sh
 termux-wake-lock
 sshd
 . /data/data/com.termux/files/usr/etc/profile.d/start-services.sh
 EOF
-chmod +x ~/.termux/boot/start-services.sh
+  chmod +x ~/.termux/boot/start-services.sh
+  echo "    boot 脚本已创建"
+fi
 
 echo "==> [4/5] 启动服务"
+# 幂等：已运行则只确认状态，未运行才拉起
 . "$PREFIX/etc/profile.d/start-services.sh"
 export SVDIR="$PREFIX/var/service"
 sv-enable openclaw 2>/dev/null || true
-sv up openclaw
-termux-wake-lock
+SV_STATUS=$(sv status openclaw 2>&1 | head -1)
+if echo "$SV_STATUS" | grep -q "run:"; then
+  echo "    服务已在运行: $SV_STATUS"
+else
+  sv up openclaw
+  termux-wake-lock
+  echo "    服务已启动"
+fi
 
 echo "==> [5/5] 等待 gateway 就绪并验证"
-sleep 25
+# 幂等：已就绪则不再等待 25s
+HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:18789/ 2>/dev/null)
+if [ "$HTTP" = "200" ]; then
+  echo "    gateway 已就绪 (HTTP 200)"
+else
+  echo "    gateway 未就绪，等待启动..."
+  sleep 25
+  HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 http://127.0.0.1:18789/)
+fi
 sv status openclaw
-HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 http://127.0.0.1:18789/)
 echo "dashboard HTTP $HTTP"
 [ "$HTTP" = "200" ] && echo "==> SERVICE_SETUP_DONE" || { echo "错误: gateway 未就绪，查看日志: $PREFIX/var/log/sv/openclaw/current"; exit 1; }
