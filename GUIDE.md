@@ -488,28 +488,30 @@ cd ~/openclaw-termux-deploy
 
 ```
 openclaw-termux-deploy/
-├── openclaw-deploy         ← 🚀 工具箱入口（bash TUI）
+├── openclaw-deploy              ← 🚀 工具箱入口（bash TUI）
+├── install.sh                   ← ⚡ 一行安装入口
+├── config/                      ← 配置模板
+│   ├── .env.example
+│   └── fleet-devices.conf.example
 ├── lib/
-│   └── common.sh           ← 共享库（UI 组件/设备配置/SSH）
-├── scripts/
-│   ├── phone_install_openclaw.sh   ← 自动安装脚本
-│   ├── phone_check_env.sh          ← 环境体检脚本
+│   ├── common.sh                ← 共享库（UI 组件/设备配置/SSH）
+│   └── menus.sh                 ← TUI 菜单实现
+├── scripts/                     ← 所有脚本（18个，详见 scripts/README.md）
+│   ├── phone_install_openclaw.sh   ← 自动安装
+│   ├── phone_check_env.sh          ← 环境体检
 │   ├── phone_setup_service.sh      ← runit 服务配置
-│   ├── k60-healthcheck.sh          ← K60 自愈互检
-│   ├── note7-healthcheck.sh        ← Note 7 自愈互检
-│   ├── mix2s-healthcheck.sh        ← MIX 2S 自愈互检
-│   ├── note4x-healthcheck.sh       ← Note 4X 自愈互检
+│   ├── *-healthcheck.sh            ← 4台自愈互检
 │   ├── self-check.sh               ← 本地资源自检
 │   ├── backup-configs.sh           ← 配置定时备份
 │   ├── check-ip.sh                 ← IP 漂移检测
-│   └── check-version.sh            ← 版本更新检测
-├── docs/
-│   └── device-comparison.md ← 机队全景文档（572 行）
-├── skill/                   ← OpenClaw 技能定义
-│   ├── SKILL.md
-│   ├── references/           ← 参考手册（部署/渠道/加固）
-│   └── scripts/
-└── GUIDE.md                 ← 📖 本文档
+│   ├── check-version.sh            ← 版本更新检测
+│   ├── feishu_push.py              ← 统一飞书推送
+│   ├── rolling-upgrade.sh          ← 滚动升级
+│   ├── channel-health.sh           ← 渠道巡检
+│   └── uninstall.sh                ← 卸载脚本
+├── docs/device-comparison.md    ← 机队全景
+├── skill/                       ← OpenClaw 技能定义
+└── GUIDE.md                     ← 📖 本文档
 ```
 
 ---

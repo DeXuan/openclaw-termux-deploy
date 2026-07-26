@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🚀 `scripts/feishu_push.py` — unified Feishu push module (stdin / `-m` / `-t`), replaces 4 duplicate implementations
 - 📖 `scripts/README.md` — script index grouped by scenario (deploy/heal/monitor/finance)
 - 🎯 CLI `--all` flag for `service` and `logs` commands — batch operate all 4 devices
-- 📋 `fleet-devices.conf.example` — centralized IP config template
+- 📋 `config/fleet-devices.conf.example` — centralized IP config template
 - 📁 `scripts/phone_setup_service.sh` — canonical copy in scripts/ directory
 
 ### Changed (P2)

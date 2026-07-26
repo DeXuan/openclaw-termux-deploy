@@ -188,7 +188,7 @@ openclaw-termux-deploy/
 
 ## 🤝 参与贡献
 
-详见 [CONTRIBUTING.md](CONTRIBUTING.md)。快速参与方式：
+详见 [CONTRIBUTING.md](.github/CONTRIBUTING.md)。快速参与方式：
 - 在你的手机上测试 → 报告结果加入机型矩阵
 - 翻译文档到其他语言
 - 分享踩坑经验

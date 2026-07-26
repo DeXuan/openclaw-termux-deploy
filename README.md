@@ -165,33 +165,35 @@ cat scripts/phone_check_env.sh | ssh -p 8022 u0_a129@<IP> 'sh -'
 
 ```
 openclaw-termux-deploy/
-├── openclaw-deploy         ← 🚀 TUI toolbox entry
-├── install.sh              ← ⚡ One-line installer
-├── lib/common.sh           ← Shared library (UI, SSH, config)
-├── scripts/
+├── openclaw-deploy              ← 🚀 TUI toolbox entry
+├── install.sh                   ← ⚡ One-line installer
+├── config/                      ← Configuration templates
+│   ├── .env.example
+│   └── fleet-devices.conf.example
+├── lib/
+│   ├── common.sh                ← Shared library (UI, SSH, config)
+│   └── menus.sh                 ← TUI menu functions
+├── scripts/                     ← All operational scripts
 │   ├── phone_install_openclaw.sh   ← Auto-install (piped via SSH)
 │   ├── phone_check_env.sh          ← Environment diagnostic
 │   ├── phone_setup_service.sh      ← runit + boot setup
 │   ├── fleet-dashboard.sh          ← Daily Feishu report
 │   ├── fund-monitor.py             ← Fund NAV daily report
-│   ├── fund-weekly.py              ← Fund weekly report
-│   ├── trade-signal-scanner.py     ← Stock signal scanner
-│   ├── runit-service_openclaw_run  ← runit template
-│   └── sshphone.template           ← SSH config template
-├── docs/device-comparison.md       ← Fleet reference
-├── skill/                          ← OpenClaw skill definitions
-│   ├── SKILL.md                    ← Skill metadata
-│   ├── references/                 ← Reference manuals
-│   └── scripts/                    ← Deploy scripts (synced)
-├── GUIDE.md                        ← Full usage guide (中文)
-└── README.md                       ← This file
+│   └── ... (18 scripts total, see scripts/README.md)
+├── docs/device-comparison.md    ← Fleet reference
+├── skill/                       ← OpenClaw skill definitions
+│   ├── references/              ← Reference manuals
+│   └── scripts/                 ← Deploy scripts (synced with scripts/)
+├── bailian-quota-switcher/      ← Bailian free quota manager
+├── GUIDE.md                     ← Full usage guide (中文)
+└── README.md                    ← This file
 ```
 
 ---
 
 ## 🤝 Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines on:
 - Adding support for new Android devices
 - Reporting bugs with diagnostic data
 - Submitting PRs with new features or fixes
