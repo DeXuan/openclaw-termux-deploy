@@ -131,6 +131,8 @@ chmod +x openclaw-deploy
 按 `r` 刷新，按 `0` 返回主菜单。
 
 > 📸 **截图位置：** 仪表盘全屏截图，展示四台设备实时数据
+> <img width="714" height="664" alt="4" src="https://github.com/user-attachments/assets/99905ddf-0621-4ccb-9653-79a8de90f6f8" />
+
 
 ### 新手部署向导
 
@@ -157,6 +159,8 @@ chmod +x openclaw-deploy
 - **远程部署**：从 PC 通过 SSH 部署到目标手机
 
 > 📸 **截图位置：** 向导页面，展示 6 个步骤指示器
+> <img width="732" height="731" alt="1" src="https://github.com/user-attachments/assets/d2e93789-f510-452d-81e1-a385623db180" />
+
 
 ### 帮助与速查
 
