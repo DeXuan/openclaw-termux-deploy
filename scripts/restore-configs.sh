@@ -65,7 +65,7 @@ restore_device() {
   # 还原文件
   local restored=0 failed=0
   for f in "${FILES_TO_RESTORE[@]}"; do
-    local src="$dev_dir/$(basename "$f")"
+    local src; src="$dev_dir/$(basename "$f")"
     if [ -f "$src" ]; then
       local remote_dir; remote_dir=$(dirname "$f")
       ssh -p "$port" -o ConnectTimeout=5 "$user@$host" "mkdir -p ~/${remote_dir}" 2>/dev/null

@@ -9,7 +9,7 @@ fail() { FAIL=$((FAIL+1)); echo "  ✗ $1 (expected: $2, got: $3)"; }
 
 # ── 准备测试数据 ──
 TEST_LOG=$(mktemp -t cf-test-XXXX.log)
-trap "rm -f $TEST_LOG" EXIT
+trap 'rm -f "$TEST_LOG"' EXIT
 
 cat > "$TEST_LOG" << 'JSONL'
 {"0":"{}","1":"[default] Processing message from USER_A: Hello world","_meta":{},"time":"2026-07-26T18:00:01.000+08:00","message":"[default] Processing message from USER_A: Hello world","traceId":"TRACE_A"}
