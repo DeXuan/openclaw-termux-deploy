@@ -4,6 +4,7 @@
 # Sourced by openclaw-deploy (main entry point)
 # Depends on: lib/common.sh (sourced before this file)
 #==============================================================================
+set -euo pipefail
 
 # ═══ Main Menu ═══
 show_menu() {
