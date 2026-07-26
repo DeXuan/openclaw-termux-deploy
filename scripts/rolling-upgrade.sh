@@ -18,7 +18,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh" 2>/dev/null || {
-  echo "WARN: 无法加载 lib/common.sh，使用内置 DEVICES 配置"
+  echo "警告: 无法加载 lib/common.sh，使用内置 DEVICES 配置"
   declare -A DEVICES
   DEVICES=(
     [K60]="u0_a129@100.118.60.29:8022"

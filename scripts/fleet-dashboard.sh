@@ -7,7 +7,7 @@ set -euo pipefail
 if [ -f ~/.fleet-dashboard.conf ]; then
   . ~/.fleet-dashboard.conf
 else
-  echo "ERROR: ~/.fleet-dashboard.conf not found"
+  echo "错误: ~/.fleet-dashboard.conf 不存在，请先配置飞书凭证"
   exit 1
 fi
 
@@ -59,7 +59,7 @@ Daily 08:57 | Backup Sun 02:00"
 
 # 统一飞书推送
 if echo "$TEXT" | python3 ~/feishu_push.py >> ~/fleet-dashboard.log 2>&1; then
-  echo "[$(date +%H:%M)] dashboard sent OK" >> ~/fleet-dashboard.log
+  echo "[$(date +%H:%M)] 仪表盘推送成功" >> ~/fleet-dashboard.log
 else
-  echo "[$(date +%H:%M)] dashboard FAILED" >> ~/fleet-dashboard.log
+  echo "[$(date +%H:%M)] 仪表盘推送失败" >> ~/fleet-dashboard.log
 fi

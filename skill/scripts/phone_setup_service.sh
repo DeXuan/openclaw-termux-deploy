@@ -10,7 +10,7 @@ set -e
 
 # 坑10：Termux:Boot 环境 PATH 无 npm 全局目录，必须解析绝对路径
 OPENCLAW_BIN=$(command -v openclaw)
-[ -n "$OPENCLAW_BIN" ] || { echo "ERROR: openclaw 未安装，先跑 phone_install_openclaw.sh"; exit 1; }
+[ -n "$OPENCLAW_BIN" ] || { echo "错误: openclaw 未安装，请先运行 phone_install_openclaw.sh"; exit 1; }
 echo "==> openclaw 绝对路径: $OPENCLAW_BIN"
 
 echo "==> [1/5] 解析 openclaw.mjs 路径 + 修复 shebang/env 陷阱（坑25）"
@@ -27,7 +27,7 @@ if [ ! -f "$OPENCLAW_MJS" ]; then
   OPENCLAW_DIR=$(dirname "$OPENCLAW_BIN")
   OPENCLAW_MJS="$OPENCLAW_DIR/$OPENCLAW_LINK"
 fi
-[ -f "$OPENCLAW_MJS" ] || { echo "ERROR: 无法定位 openclaw.mjs（$OPENCLAW_MJS）"; exit 1; }
+[ -f "$OPENCLAW_MJS" ] || { echo "错误: 无法定位 openclaw.mjs（$OPENCLAW_MJS）"; exit 1; }
 echo "    openclaw.mjs = $OPENCLAW_MJS"
 
 # 替换 npm symlink → bash wrapper（根治 shebang 问题，MIX 2S 2026-07-20 已验证）
@@ -75,4 +75,4 @@ sleep 25
 sv status openclaw
 HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 http://127.0.0.1:18789/)
 echo "dashboard HTTP $HTTP"
-[ "$HTTP" = "200" ] && echo "==> SERVICE_SETUP_DONE" || { echo "ERROR: gateway 未就绪，查日志 $PREFIX/var/log/sv/openclaw/current"; exit 1; }
+[ "$HTTP" = "200" ] && echo "==> SERVICE_SETUP_DONE" || { echo "错误: gateway 未就绪，查看日志: $PREFIX/var/log/sv/openclaw/current"; exit 1; }
