@@ -63,6 +63,7 @@ deploy_device() {
     "rm -f \$HOME/.openclaw/logs/stability/*.json 2>/dev/null; echo '  breaker: cleared'" 2>/dev/null
 
   # Step 3: Auth + Models + Config
+  # shellcheck disable=SC2087  # \$ 转义确保变量在服务端展开
   ssh -o ConnectTimeout=15 -p "$PORT" "$USER@$HOST" bash -s << ENDSSH
 set -e
 KEY=\$(cat \$HOME/bailian_key.txt)

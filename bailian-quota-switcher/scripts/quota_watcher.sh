@@ -18,7 +18,7 @@ echo "[watcher] $(date +%H:%M:%S) started, pid=$$"
 
 # 启动自检
 # 1. 清理残留的 crash-loop breaker
-if ls "$STABILITY_DIR"/*.json 2>/dev/null | grep -q crash_loop_breaker; then
+if find "$STABILITY_DIR" -maxdepth 1 -name "*crash_loop_breaker*.json" 2>/dev/null | grep -q .; then
   echo "[watcher] clearing stale crash-loop breaker files"
   rm -f "$STABILITY_DIR"/*.json
 fi

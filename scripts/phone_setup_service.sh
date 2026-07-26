@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/sh
+#!/data/data/com.termux/files/usr/bin/bash
 # OpenClaw runit 服务 + Termux:Boot 启动脚本配置（手机 Termux 侧执行，幂等可重跑）
 # 用法: cat phone_setup_service.sh | ssh -p 8022 user@<IP> 'sh -'
 #

@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/sh
+#!/data/data/com.termux/files/usr/bin/bash
 # OpenClaw 卸载脚本（手机 Termux 侧执行，幂等）
 # 用法: cat uninstall.sh | ssh -p 8022 user@<IP> 'sh -'
 #       bash uninstall.sh --dry-run        # 预览不执行
