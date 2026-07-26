@@ -103,7 +103,7 @@
 ### 方式一：一键部署脚本
 
 ```bash
-export BAILIAN_KEY="sk-ws-H.XXX"
+export BAILIAN_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # 编辑 scripts/deploy.sh 的 DEVICES 数组
 DEVICES=(
@@ -136,7 +136,7 @@ echo "$KEY" | ssh -p 8022 user@<IP> \
     "alibaba-model-studio": {
       "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
       "api": "openai-completions",
-      "apiKey": "sk-ws-H.XXX",
+      "apiKey": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       "models": [
         {"id":"qwen3.7-max","name":"Qwen3.7 Max",...},
         {"id":"qwen3.7-plus","name":"Qwen3.7 Plus",...}

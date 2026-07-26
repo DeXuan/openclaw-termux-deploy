@@ -15,7 +15,7 @@ alert() {
 }
 
 # ── 找最新 gateway 日志 ──
-GLOG=$(ls -t "$PREFIX/tmp/openclaw-"*/openclaw-*.log 2>/dev/null | head -1)
+GLOG=$(ls -t "$PREFIX/tmp/openclaw-"*/openclaw-20*.log 2>/dev/null | head -1)
 if [ -z "$GLOG" ] || [ ! -f "$GLOG" ]; then
   log "SKIP: 未找到 gateway 日志"
   exit 0

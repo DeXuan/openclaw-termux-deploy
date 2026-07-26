@@ -21,7 +21,7 @@ alert() {
 
 # ── 1. 快速探活 ──
 HTTP=$(ssh -p "$PORT" -o ConnectTimeout=5 -o BatchMode=yes "$TARGET" \
-  "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18789/" 2>/dev/null) || HTTP="ssh_fail"
+  "curl -s -o /dev/null -w '%{http_code}' --connect-timeout 3 http://127.0.0.1:18789/" 2>/dev/null) || HTTP="ssh_fail"
 
 if [ "$HTTP" = "200" ]; then
   exit 0  # 一切正常，静默退出
@@ -60,7 +60,7 @@ for ((i=1; i<=MAX_RETRY; i++)); do
 
   # 重新探活
   HTTP=$(ssh -p "$PORT" -o ConnectTimeout=5 -o BatchMode=yes "$TARGET" \
-    "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18789/" 2>/dev/null) || HTTP="ssh_fail"
+    "curl -s -o /dev/null -w '%{http_code}' --connect-timeout 3 http://127.0.0.1:18789/" 2>/dev/null) || HTTP="ssh_fail"
 
   if [ "$HTTP" = "200" ]; then
     log "✅ 第 ${i} 次重启后恢复 (HTTP 200)"
