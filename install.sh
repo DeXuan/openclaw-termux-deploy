@@ -9,6 +9,47 @@
 #   - skill/scripts/ 下的对应副本
 set -e
 
+# ── CLI 参数解析 ──
+YES=false; DRY_RUN=false; VERBOSE=false; NO_AUTO_START=false
+OC_VERSION="latest"; OC_PORT="18789"; OC_TOKEN=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --yes|-y) YES=true ;;
+    --dry-run|-d) DRY_RUN=true ;;
+    --verbose|-v) VERBOSE=true ;;
+    --no-auto-start) NO_AUTO_START=true ;;
+    --version|-V) OC_VERSION="$2"; shift ;;
+    --port|-p) OC_PORT="$2"; shift ;;
+    --token|-t) OC_TOKEN="$2"; shift ;;
+    --help|-h)
+      echo "Usage: curl -fsSL ... | bash -s -- [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  --yes, -y          非交互模式，使用默认值"
+      echo "  --version, -V <v>  指定 OpenClaw 版本 (默认 latest)"
+      echo "  --port, -p <port>  指定 Gateway 端口 (默认 18789)"
+      echo "  --token, -t <tok>  指定 Gateway Token (默认自动生成)"
+      echo "  --no-auto-start    安装后不自动启动 gateway"
+      echo "  --dry-run, -d      模拟运行，不实际安装"
+      echo "  --verbose, -v      详细输出"
+      echo "  --help, -h         显示帮助"
+      echo ""
+      echo "Examples:"
+      echo "  curl -fsSL ... | bash                      # 交互式安装"
+      echo "  curl -fsSL ... | bash -s -- --yes          # 一键安装"
+      echo "  curl -fsSL ... | bash -s -- --yes --version 2026.7.1"
+      exit 0
+      ;;
+    *) echo "Unknown option: $1 (use --help)"; exit 1 ;;
+  esac
+  shift
+done
+
+# npm 国内镜像加速
+NPM_MIRROR="https://registry.npmmirror.com"
+export NPM_CONFIG_REGISTRY="$NPM_MIRROR"
+
 echo ""
 echo "  ╔══════════════════════════════════════════╗"
 echo "  ║   OpenClaw Termux Deploy  v2.6.0        ║"
@@ -43,12 +84,16 @@ trap cleanup_and_exit INT TERM
 echo "  This will install Node.js + OpenClaw + runit"
 echo "  on: $(getprop ro.product.model 2>/dev/null || echo 'this device')"
 echo "  Estimated time: 5-10 minutes"
-echo ""
-printf "  Continue? [Y/n] "
-read -r confirm
-case "$confirm" in
-  [Nn]|[Nn][Oo]) echo "  Aborted."; exit 0 ;;
-esac
+if $YES; then
+  echo "  Mode: --yes (non-interactive)"
+else
+  echo ""
+  printf "  Continue? [Y/n] "
+  read -r confirm
+  case "$confirm" in
+    [Nn]|[Nn][Oo]) echo "  Aborted."; exit 0 ;;
+  esac
+fi
 
 # ── Preflight ──
 if [ -z "$PREFIX" ] || [ ! -d "$PREFIX" ]; then
@@ -99,10 +144,14 @@ if [ "$NODE_OK" != "yes" ]; then
 fi
 
 # ── OpenClaw ──
-echo "[3/6] Installing OpenClaw..."
-export GYP_DEFINES="android_ndk_path="
-npm install -g --allow-scripts=openclaw,@google/genai,protobufjs,tree-sitter-bash openclaw@latest 2>&1 | tail -1
-echo "  OK: $(openclaw --version 2>&1 | head -1)"
+echo "[3/6] Installing OpenClaw@${OC_VERSION}..."
+if $DRY_RUN; then
+  echo "  [DRY-RUN] npm install -g openclaw@${OC_VERSION}"
+else
+  export GYP_DEFINES="android_ndk_path="
+  npm install -g --allow-scripts=openclaw,@google/genai,protobufjs,tree-sitter-bash "openclaw@${OC_VERSION}" 2>&1 | tail -1
+  echo "  OK: $(openclaw --version 2>&1 | head -1)"
+fi
 
 # ── Shebang fix (pitfall#25) ──
 echo "[4/6] Applying shebang/env fix..."
@@ -172,7 +221,36 @@ echo "  ║   1. openclaw onboard --help           ║"
 echo "  ║   2. Set up QQ/Feishu/WeChat channels  ║"
 echo "  ║   3. cat phone_check_env.sh | sh -     ║"
 echo "  ║                                        ║"
+echo "  ║   Quick commands:                      ║"
+echo "  ║   ocr  = gateway 状态                  ║"
+echo "  ║   oclog = 实时日志                     ║"
+echo "  ║   ockill = 停止 gateway               ║"
+echo "  ║                                        ║"
 echo "  ║   Docs: https://github.com/DeXuan/     ║"
 echo "  ║         openclaw-termux-deploy         ║"
 echo "  ╚══════════════════════════════════════════╝"
 echo ""
+
+# ── Shell 配置块 (bashrc 注入) ──
+if ! $DRY_RUN && [ "$HTTP" = "200" ]; then
+  NPM_BIN="$(npm bin -g 2>/dev/null || echo "$HOME/.npm-global/bin")"
+  BLOCK_START="# --- OpenClaw managed block ---"
+  BLOCK_END="# --- End OpenClaw block ---"
+
+  if grep -qF "$BLOCK_START" "$HOME/.bashrc" 2>/dev/null; then
+    sed -i "/^$(echo "$BLOCK_START" | sed 's/[\/&]/\\&/g')$/,/^$(echo "$BLOCK_END" | sed 's/[\/&]/\\&/g')$/d" "$HOME/.bashrc"
+  fi
+
+  cat >> "$HOME/.bashrc" << BLOCK
+
+${BLOCK_START}
+export PATH="${NPM_BIN}:\$PATH"
+export SVDIR="\$PREFIX/var/service"
+
+ocr()  { sv status openclaw 2>/dev/null; curl -so /dev/null -w "HTTP %{http_code}" http://127.0.0.1:18789/ 2>/dev/null; echo; }
+oclog(){ tail -f "\$PREFIX/var/log/sv/openclaw/current" 2>/dev/null || echo "日志不可用"; }
+ockill(){ sv down openclaw 2>/dev/null && echo "gateway 已停止" || echo "gateway 未运行"; }
+${BLOCK_END}
+BLOCK
+  echo "  ✓ Shell 命令已注入 ~/.bashrc (ocr/oclog/ockill)"
+fi

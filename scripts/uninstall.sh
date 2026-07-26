@@ -38,7 +38,7 @@ echo "  $( [ "$KEEP_CONFIG" = true ] && echo '配置: 保留 ~/.openclaw/' || ec
 echo ""
 
 # ═══ 1. 停服务 ═══
-echo "── [1/6] 停止服务 ──"
+echo "── [1/7] 停止服务 ──"
 if [ -d "$PREFIX/var/service/openclaw" ]; then
   run "export SVDIR=\$PREFIX/var/service && sv down openclaw 2>/dev/null || true"
   sleep 2
@@ -49,7 +49,7 @@ else
 fi
 
 # ═══ 2. 清理 crontab ═══
-echo "── [2/6] 清理 crontab ──"
+echo "── [2/7] 清理 crontab ──"
 if crontab -l 2>/dev/null | grep -qE "healthcheck|self-check|openclaw|fleet-dashboard|check-ip|check-version|backup-configs|fund-monitor|fund-weekly|trade-signal|quota_watcher|rolling-upgrade"; then
   echo "  当前 crontab:"
   crontab -l 2>/dev/null | grep -E "healthcheck|self-check|openclaw|fleet-dashboard|check-ip|check-version|backup-configs|fund-monitor|fund-weekly|trade-signal|quota_watcher|rolling-upgrade" | while read -r line; do
@@ -62,7 +62,7 @@ else
 fi
 
 # ═══ 3. 清理脚本文件 ═══
-echo "── [3/6] 清理部署的脚本 ──"
+echo "── [3/7] 清理部署的脚本 ──"
 SCRIPTS="healthcheck.sh self-check.sh check-ip.sh check-version.sh backup-configs.sh fleet-dashboard.sh fund-monitor.py fund-weekly.py trade-signal-scanner.py feishu_push.py quota_watcher.sh quota_manager.sh rolling-upgrade.sh"
 for f in $SCRIPTS; do
   [ -f "$HOME/$f" ] && run "rm -f \$HOME/$f" && echo "  ✓ $f" || true
@@ -74,7 +74,7 @@ done
 echo "  ✓ 脚本文件已清理"
 
 # ═══ 4. 清理 Termux:Boot ═══
-echo "── [4/6] 清理开机自启 ──"
+echo "── [4/7] 清理开机自启 ──"
 if [ -f "$HOME/.termux/boot/start-services.sh" ]; then
   if grep -q "openclaw\|runsv\|start-services" "$HOME/.termux/boot/start-services.sh" 2>/dev/null; then
     run "rm -f \$HOME/.termux/boot/start-services.sh"
@@ -86,8 +86,19 @@ else
   echo "  (无 boot 脚本)"
 fi
 
+# ═══ 4b. 清理 Shell 配置块 ═══
+echo "── [5/7] 清理 Shell 配置块 ──"
+BLOCK_START="# --- OpenClaw managed block ---"
+BLOCK_END="# --- End OpenClaw block ---"
+if grep -qF "$BLOCK_START" "$HOME/.bashrc" 2>/dev/null; then
+  run "sed -i \"/^${BLOCK_START}$/,/^${BLOCK_END}$/d\" \$HOME/.bashrc"
+  echo "  ✓ bashrc 配置块已移除 (ocr/oclog/ockill)"
+else
+  echo "  (无 OpenClaw 配置块，跳过)"
+fi
+
 # ═══ 5. 卸载 npm 包 ═══
-echo "── [5/6] 卸载 OpenClaw ──"
+echo "── [6/7] 卸载 OpenClaw ──"
 if command -v openclaw >/dev/null 2>&1; then
   OC_VER=$(openclaw --version 2>&1 | head -1)
   echo "  当前版本: $OC_VER"
@@ -98,7 +109,7 @@ else
 fi
 
 # ═══ 6. 配置文件 ═══
-echo "── [6/6] 配置文件 ──"
+echo "── [7/7] 配置文件 ──"
 if [ "$KEEP_CONFIG" = true ]; then
   echo "  ✓ ~/.openclaw/ 已保留 (--keep-config)"
 else

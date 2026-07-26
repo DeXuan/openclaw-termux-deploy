@@ -43,8 +43,10 @@ if [ "$NODE_OK" = yes ]; then echo "    node $NV OK"; else
   exit 1
 fi
 
-echo "==> [3/5] 安装 OpenClaw（含坑2 NDK 变量 / 坑3 allow-scripts 修复）"
+echo "==> [3/5] 安装 OpenClaw（npm 国内镜像加速 + 坑2 NDK / 坑3 allow-scripts）"
 export GYP_DEFINES="android_ndk_path="
+# 国内镜像加速 (npmmirror)
+npm config set registry https://registry.npmmirror.com 2>/dev/null || true
 npm install -g --allow-scripts=openclaw,@google/genai,protobufjs,tree-sitter-bash openclaw@latest
 
 echo "==> [4/5] 验证版本"

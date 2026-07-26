@@ -13,7 +13,7 @@ OPENCLAW_BIN=$(command -v openclaw)
 [ -n "$OPENCLAW_BIN" ] || { echo "错误: openclaw 未安装，请先运行 phone_install_openclaw.sh"; exit 1; }
 echo "==> openclaw 绝对路径: $OPENCLAW_BIN"
 
-echo "==> [1/5] 解析 openclaw.mjs 路径 + 修复 shebang/env 陷阱（坑25）"
+echo "==> [1/6] 解析 openclaw.mjs 路径 + 修复 shebang/env 陷阱（坑25）"
 # 坑25：Android/Termux 没有 /usr/bin/env，npm 全局 bin symlink → .mjs 的
 # shebang "#!/usr/bin/env node" 在内核 exec() 时找不到解释器 → "not found"
 
@@ -41,7 +41,7 @@ WRAPPEREOF
   echo "    openclaw symlink → bash wrapper（shebang 修复）"
 fi
 
-echo "==> [2/5] 创建 runit 服务"
+echo "==> [2/6] 创建 runit 服务"
 # 幂等：服务目录已存在则跳过创建，但确保 run 脚本内容最新
 if [ -d "$PREFIX/var/service/openclaw" ]; then
   echo "    runit 服务已存在，更新 run 脚本..."
@@ -59,7 +59,7 @@ exec $PREFIX/bin/node $OPENCLAW_MJS gateway
 EOF
 chmod +x "$PREFIX/var/service/openclaw/run"
 
-echo "==> [3/5] 创建 Termux:Boot 开机脚本（wake-lock + sshd + 服务群）"
+echo "==> [3/6] 创建 Termux:Boot 开机脚本（wake-lock + sshd + 服务群）"
 # 幂等：boot 脚本已存在且内容正确则跳过
 BOOT_EXPECTED='#!/data/data/com.termux/files/usr/bin/sh
 termux-wake-lock
@@ -80,7 +80,7 @@ EOF
   echo "    boot 脚本已创建"
 fi
 
-echo "==> [4/5] 启动服务"
+echo "==> [4/6] 启动服务"
 # 幂等：已运行则只确认状态，未运行才拉起
 . "$PREFIX/etc/profile.d/start-services.sh"
 export SVDIR="$PREFIX/var/service"
@@ -94,7 +94,7 @@ else
   echo "    服务已启动"
 fi
 
-echo "==> [5/5] 等待 gateway 就绪并验证"
+echo "==> [5/6] 等待 gateway 就绪并验证"
 # 幂等：已就绪则不再等待 25s
 HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:18789/ 2>/dev/null)
 if [ "$HTTP" = "200" ]; then
@@ -106,4 +106,30 @@ else
 fi
 sv status openclaw
 echo "dashboard HTTP $HTTP"
+
+echo "==> [6/6] 注入 Shell 快捷命令 (ocr/oclog/ockill)"
+NPM_BIN=$(npm bin -g 2>/dev/null || echo "$HOME/.npm-global/bin")
+BLOCK_START="# --- OpenClaw managed block ---"
+BLOCK_END="# --- End OpenClaw block ---"
+
+# 幂等：移除旧块再写入
+if grep -qF "$BLOCK_START" "$HOME/.bashrc" 2>/dev/null; then
+  sed -i "/^${BLOCK_START}$/,/^${BLOCK_END}$/d" "$HOME/.bashrc"
+  echo "    旧配置块已清理"
+fi
+
+cat >> "$HOME/.bashrc" << BLOCK
+
+${BLOCK_START}
+export PATH="${NPM_BIN}:\$PATH"
+export SVDIR="\$PREFIX/var/service"
+
+ocr()  { sv status openclaw 2>/dev/null; curl -so /dev/null -w "HTTP %{http_code}" http://127.0.0.1:18789/ 2>/dev/null; echo; }
+oclog(){ tail -f "\$PREFIX/var/log/sv/openclaw/current" 2>/dev/null || echo "日志不可用"; }
+ockill(){ sv down openclaw 2>/dev/null && echo "gateway 已停止" || echo "gateway 未运行"; }
+${BLOCK_END}
+BLOCK
+echo "    ✓ ocr/oclog/ockill 已注入 ~/.bashrc"
+echo "    新终端生效，或执行: source ~/.bashrc"
+
 [ "$HTTP" = "200" ] && echo "==> SERVICE_SETUP_DONE" || { echo "错误: gateway 未就绪，查看日志: $PREFIX/var/log/sv/openclaw/current"; exit 1; }
