@@ -1,5 +1,7 @@
 # OpenClaw Termux Deploy — Turn Old Android Phones into AI Servers 🚀
 
+> 📖 **English** | [中文](README_CN.md)
+
 [![GitHub Stars](https://img.shields.io/github/stars/DeXuan/openclaw-termux-deploy?style=flat&color=yellow)](https://github.com/DeXuan/openclaw-termux-deploy/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.7.1--2-blue)](https://openclaw.ai)
