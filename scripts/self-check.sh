@@ -23,6 +23,10 @@ alert() {
   if [ -n "$dedup_key" ] && ! dedup_check "$dedup_key" 3600; then
     return 0
   fi
+  # 本地通知 (需 termux-api 包)
+  if command -v termux-notification >/dev/null 2>&1; then
+    termux-notification -t "⚙️ ${HOSTNAME}" -c "$(echo "$msg" | head -1)" --priority high 2>/dev/null || true
+  fi
   timeout 15 openclaw agent --agent main --message "⚙️ ${HOSTNAME}: $msg" 2>/dev/null || true
 }
 

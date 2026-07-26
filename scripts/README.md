@@ -48,6 +48,8 @@ ssh user@<IP> '(crontab -l 2>/dev/null; echo "*/5 * * * * ~/healthcheck.sh") | c
 | `channel-health.sh` | 渠道巡检：grep gateway 日志检测 QQ/飞书/微信连通性 + 1006/401 告警 | */15 |
 | `channel-flow.sh` | 消息流监控：追踪收→处理→回复生命周期，未回复检测 + 响应延迟 + 模型错误 | */5 |
 | `rolling-upgrade.sh` | 金丝雀升级：preflight→canary(Note7)→逐台升级→摘要（支持 --dry-run） | 手动 |
+| `restore-configs.sh` | 配置还原：从备份目录恢复 openclaw.json/models.json/sqlite 到指定设备（还原前自动备份当前配置） | 手动 |
+| `alert-dedup.sh` | 告警去重模块：同 key 30min 冷却防刷屏（被 channel-health/flow/self-check source） | 自动 |
 
 ## 🔧 基础设施
 

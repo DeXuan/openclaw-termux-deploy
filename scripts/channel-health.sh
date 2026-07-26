@@ -28,6 +28,10 @@ alert() {
     return 0
   fi
   echo "$msg" | python3 ~/feishu_push.py -t "📡 渠道告警" 2>/dev/null || true
+  # 本地通知 (需 termux-api 包)
+  if command -v termux-notification >/dev/null 2>&1; then
+    termux-notification -t "📡 渠道告警" -c "$(echo "$msg" | head -1)" --priority high 2>/dev/null || true
+  fi
 }
 
 # ── 找最新 gateway 日志 ──

@@ -114,7 +114,7 @@ echo "Device: $MODEL | Android $AV | RAM ${RAM}MB"
 
 # ── Deps ──
 echo ""
-echo "[1/6] Installing system dependencies..."
+echo "[1/7] Installing system dependencies..."
 pkg update -y -q >/dev/null 2>&1 || pkg update -y
 pkg install -y -q nodejs git python make clang binutils termux-services which coreutils >/dev/null 2>&1
 echo "  OK: node $(node --version) | python $(python3 --version 2>&1 | cut -d' ' -f2)"
@@ -232,6 +232,7 @@ echo "  ╚═══════════════════════
 echo ""
 
 # ── Shell 配置块 (bashrc 注入) ──
+echo "[7/7] Injecting shell shortcuts (ocr/oclog/ockill)..."
 if ! $DRY_RUN && [ "$HTTP" = "200" ]; then
   NPM_BIN="$(npm bin -g 2>/dev/null || echo "$HOME/.npm-global/bin")"
   BLOCK_START="# --- OpenClaw managed block ---"
