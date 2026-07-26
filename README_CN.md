@@ -195,6 +195,10 @@ openclaw-termux-deploy/
 
 ---
 
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=DeXuan/openclaw-termux-deploy&type=Date)](https://star-history.com/#DeXuan/openclaw-termux-deploy&Date)
+
 ## 🔗 相关链接
 
 - [OpenClaw 官方](https://openclaw.ai) · [SkillHub 技能市场](https://skillhub.cn)

@@ -202,6 +202,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
 ---
 
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=DeXuan/openclaw-termux-deploy&type=Date)](https://star-history.com/#DeXuan/openclaw-termux-deploy&Date)
+
 ## 🔗 Links
 
 - [OpenClaw Official](https://openclaw.ai) · [SkillHub Market](https://skillhub.cn)
