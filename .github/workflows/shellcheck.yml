@@ -24,4 +24,4 @@ jobs:
           ignore_paths: >-
             skill-formatter
             bailian-quota-switcher
-          severity: warning
+          severity: error
