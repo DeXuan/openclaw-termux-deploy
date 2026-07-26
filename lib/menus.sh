@@ -119,6 +119,10 @@ run_wizard_local() {
   if command -v openclaw &>/dev/null; then
     log_ok "OpenClaw $(openclaw --version 2>/dev/null | head -1) 已安装"
   else
+    echo -e "\n  ${C_DIM}即将安装 Node.js + OpenClaw + 编译依赖，约 5-10 分钟${C_RESET}"
+    echo -e "  ${C_BOLD}[1]${C_RESET} 继续安装  ${C_BOLD}[0]${C_RESET} 返回主菜单"
+    read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" do_install
+    [ "$do_install" = "0" ] && { echo -e "\n  ${C_DIM}已取消，返回主菜单${C_RESET}"; sleep 1; show_menu; return; }
     if [ -f "$SCRIPT_DIR/scripts/phone_install_openclaw.sh" ]; then
       log_step "正在安装 (可能需要几分钟)…"
       spinner_start "安装 OpenClaw..."
@@ -141,11 +145,13 @@ run_wizard_local() {
     echo -e "  [1] DeepSeek (推荐，有免费额度)"
     echo -e "  [2] 阿里百炼 (需 OAuth 认证)"
     echo -e "  [3] 自定义 API"
+    echo -e "  ${C_DIM}[0]${C_RESET} 跳过（稍后手动配置）"
     read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" model_choice
     case "$model_choice" in
       1) openclaw onboard --non-interactive --mode local --auth-choice deepseek-api-key --accept-risk 2>&1 | tail -3 ;;
       2) log_info "请手动运行: openclaw onboard --non-interactive --mode local --auth-choice alibaba-oauth --accept-risk" ;;
       3) log_info "请手动运行: openclaw onboard" ;;
+      0) log_info "跳过模型配置（可稍后通过 openclaw onboard 配置）" ;;
     esac
   fi
 
@@ -207,6 +213,11 @@ run_wizard_remote() {
   fi
 
   show_step 2 3 "远程安装 OpenClaw…"
+  echo -e "\n  ${C_DIM}即将在 $target 上安装 Node.js + OpenClaw + runit${C_RESET}"
+  echo -e "  ${C_DIM}预计 5-10 分钟，期间请勿关闭终端${C_RESET}"
+  echo -e "  ${C_BOLD}[1]${C_RESET} 开始安装  ${C_BOLD}[0]${C_RESET} 返回主菜单"
+  read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" do_install
+  [ "$do_install" = "0" ] && { echo -e "\n  ${C_DIM}已取消${C_RESET}"; sleep 1; show_menu; return; }
   local inst_script="$SCRIPT_DIR/scripts/phone_install_openclaw.sh"
   [ ! -f "$inst_script" ] && inst_script="$SCRIPT_DIR/skill/scripts/phone_install_openclaw.sh"
   spinner_start "部署到 $target..."
