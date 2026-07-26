@@ -58,7 +58,7 @@ if [ "$QQ_RECEIVED" -gt 0 ] 2>/dev/null; then
     if ! grep -q "onMessageSent.*$trace_id" "$RECENT" 2>/dev/null; then
       UNREPLIED=$((UNREPLIED + 1))
       # 提取消息内容摘要（截取前 50 字）
-      MSG_PREVIEW=$(grep "Processing message.*$trace_id" "$RECENT" 2>/dev/null | head -1 | grep -oP 'Processing message from [^:]+: \K[^"]+' | head -c 50)
+      MSG_PREVIEW=$(grep "Processing message.*$trace_id" "$RECENT" 2>/dev/null | head -1 | grep -oP '"message":"[^"]*Processing message from [^:]+: \K[^"]+' | head -c 50)
       UNREPLIED_MSGS+="  • ${MSG_PREVIEW:-无内容}"$'\n'
     fi
   done < <(grep 'Processing message from' "$RECENT" 2>/dev/null | grep -oP '"traceId":"\K[^"]+' | sort -u)
@@ -71,7 +71,7 @@ LATENCY_COUNT=0
 while IFS= read -r elapsed; do
   LATENCY_SUM=$((LATENCY_SUM + elapsed))
   LATENCY_COUNT=$((LATENCY_COUNT + 1))
-done < <(grep -oP 'elapsedMs=\K\d+' "$RECENT" 2>/dev/null || true)
+done < <(grep -oP '"message":"[^"]*elapsedMs=\K\d+' "$RECENT" 2>/dev/null || true)
 
 AVG_LATENCY="N/A"
 if [ "$LATENCY_COUNT" -gt 0 ] 2>/dev/null; then
@@ -79,11 +79,11 @@ if [ "$LATENCY_COUNT" -gt 0 ] 2>/dev/null; then
 fi
 
 # ═══ 4. 模型请求统计 ═══
-MODEL_STARTS=$(grep -c '\[model-fetch\] start' "$RECENT" 2>/dev/null || echo 0)
+MODEL_STARTS=$(grep -c '"message":"[^"]*\[model-fetch\] start' "$RECENT" 2>/dev/null || echo 0)
 MODEL_STARTS="${MODEL_STARTS//[^0-9]/}"
 [ -z "$MODEL_STARTS" ] && MODEL_STARTS=0
 
-MODEL_ERRORS=$(grep -c '\[model-fetch\].*status=[^2]' "$RECENT" 2>/dev/null || echo 0)
+MODEL_ERRORS=$(grep -c '"message":"[^"]*\[model-fetch\].*status=[^2]' "$RECENT" 2>/dev/null || echo 0)
 MODEL_ERRORS="${MODEL_ERRORS//[^0-9]/}"
 [ -z "$MODEL_ERRORS" ] && MODEL_ERRORS=0
 
