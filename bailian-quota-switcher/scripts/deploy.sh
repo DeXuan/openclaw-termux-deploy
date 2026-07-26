@@ -1,9 +1,11 @@
 #!/bin/bash
 # 一键部署百炼免费模型 + watcher 到多台 Termux 设备 v2.2
-# 用法: export BAILIAN_KEY="sk-ws-H.XXX"; bash deploy.sh
+# 用法: export BAILIAN_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; bash deploy.sh
+#        (百炼控制台 → 模型广场 → API-KEY 管理 → 创建)
 set -e
 
-API_KEY="${BAILIAN_KEY:-sk-ws-H.XXX}"
+PLACEHOLDER="__YOUR_BAILIAN_API_KEY__"
+API_KEY="${BAILIAN_KEY:-$PLACEHOLDER}"
 
 DEVICES=(
   "192.168.1.23 u0_a197 8022 K60 qwen3.7-max"
@@ -26,9 +28,10 @@ FALLBACK_ORDER="qwen3.7-max qwen3.7-plus qwen3-max qwen-max qwen-plus deepseek-v
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # === 飞行前检查 ===
-if [ "$API_KEY" = "sk-ws-H.XXX" ]; then
-  echo "ERROR: 请设置 API_KEY"
-  echo "  export BAILIAN_KEY=sk-ws-H..."
+if [ "$API_KEY" = "$PLACEHOLDER" ]; then
+  echo "ERROR: 请设置百炼 API Key"
+  echo "  export BAILIAN_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  echo "  获取: https://bailian.console.aliyun.com → 模型广场 → API-KEY 管理"
   exit 1
 fi
 

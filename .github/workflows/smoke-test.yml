@@ -1,0 +1,75 @@
+name: Smoke Test
+
+on:
+  push:
+    paths:
+      - '**.sh'
+      - '**.py'
+      - 'openclaw-deploy'
+      - 'install.sh'
+      - 'lib/**'
+      - 'scripts/**'
+  pull_request:
+    paths:
+      - '**.sh'
+      - '**.py'
+      - 'openclaw-deploy'
+      - 'install.sh'
+      - 'lib/**'
+      - 'scripts/**'
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Bash syntax check (all .sh files)
+        run: |
+          echo "=== bash -n 语法检查 ==="
+          FAIL=0
+          for f in $(find . -name "*.sh" -not -path "./.git/*" -not -path "./skill-formatter/*"); do
+            bash -n "$f" 2>&1 || { echo "FAIL: $f"; FAIL=1; }
+          done
+          # openclaw-deploy 无后缀但也需要检查
+          bash -n openclaw-deploy 2>&1 || { echo "FAIL: openclaw-deploy"; FAIL=1; }
+          if [ $FAIL -eq 0 ]; then echo "All bash syntax OK"; fi
+          exit $FAIL
+
+      - name: Python compile check
+        run: |
+          echo "=== python3 -m py_compile ==="
+          FAIL=0
+          for f in $(find . -name "*.py" -not -path "./.git/*" -not -path "./skill-formatter/*"); do
+            python3 -c "import py_compile; py_compile.compile('$f', doraise=True)" 2>&1 || { echo "FAIL: $f"; FAIL=1; }
+          done
+          if [ $FAIL -eq 0 ]; then echo "All python compile OK"; fi
+          exit $FAIL
+
+      - name: Install script consistency check
+        run: |
+          echo "=== 安装脚本关键逻辑一致性检查 ==="
+          FAIL=0
+          # 1. GYP_DEFINES 变量必须一致
+          GYP_COUNT=$(grep -c 'GYP_DEFINES="android_ndk_path="' install.sh scripts/phone_install_openclaw.sh scripts/phone_setup_service.sh 2>/dev/null || true)
+          echo "  GYP_DEFINES found in $GYP_COUNT/3 canonical scripts (expect 3)"
+          # 2. NODE_OPTIONS IPv4 必须一致
+          NODEOPT_COUNT=$(grep -c 'dns-result-order=ipv4first' install.sh scripts/phone_setup_service.sh scripts/runit-service_openclaw_run 2>/dev/null || true)
+          echo "  NODE_OPTIONS ipv4first found in $NODEOPT_COUNT/3 scripts (expect 3)"
+          # 3. skill/ 副本与 scripts/ 是否同步
+          for f in phone_check_env.sh phone_install_openclaw.sh phone_setup_service.sh; do
+            if diff -q "scripts/$f" "skill/scripts/$f" >/dev/null 2>&1; then
+              echo "  ✓ scripts/$f == skill/scripts/$f"
+            else
+              echo "  ✗ scripts/$f != skill/scripts/$f — 请同步!"
+              FAIL=1
+            fi
+          done
+          exit $FAIL
+
+      - name: ShellCheck (warning level, full coverage)
+        uses: ludeeus/action-shellcheck@master
+        with:
+          ignore_paths: >-
+            skill-formatter
+          severity: warning
