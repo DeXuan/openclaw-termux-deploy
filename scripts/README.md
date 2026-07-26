@@ -46,6 +46,7 @@ ssh user@<IP> '(crontab -l 2>/dev/null; echo "*/5 * * * * ~/healthcheck.sh") | c
 | `check-version.sh` | npm 扫描 OpenClaw 新版本 → 飞书告警 | 周一 10:37 |
 | `backup-configs.sh` | 四设备配置拉取备份到 K60（tar.gz，30天保留） | 周日 02:00 |
 | `channel-health.sh` | 渠道巡检：grep gateway 日志检测 QQ/飞书/微信连通性 + 1006/401 告警 | */15 |
+| `channel-flow.sh` | 消息流监控：追踪收→处理→回复生命周期，未回复检测 + 响应延迟 + 模型错误 | */5 |
 | `rolling-upgrade.sh` | 金丝雀升级：preflight→canary(Note7)→逐台升级→摘要（支持 --dry-run） | 手动 |
 
 ## 🔧 基础设施
