@@ -52,9 +52,9 @@ jobs:
           FAIL=0
           CANONICAL="install.sh scripts/phone_install_openclaw.sh scripts/phone_setup_service.sh"
 
-          # 1. GYP_DEFINES 变量必须一致 (三文件均需包含)
+          # 1. GYP_DEFINES 变量必须一致 (仅安装脚本需要，setup 不跑 npm install)
           echo "--- 1. GYP_DEFINES ---"
-          for f in $CANONICAL; do
+          for f in install.sh scripts/phone_install_openclaw.sh; do
             if grep -q 'GYP_DEFINES="android_ndk_path="' "$f" 2>/dev/null; then
               echo "  ✓ $f"
             else
@@ -86,13 +86,13 @@ jobs:
             fi
           done
 
-          # 4. runit run 脚本 exec node 模式一致
+          # 4. runit run 脚本 exec node 模式一致（含变量引用 $OCMJS/$OPENCLAW_MJS）
           echo "--- 4. runit exec node pattern ---"
           for f in install.sh scripts/phone_setup_service.sh scripts/runit-service_openclaw_run; do
-            if grep -qE 'exec.*node.*openclaw\.mjs.*gateway' "$f" 2>/dev/null; then
+            if grep -qE 'exec.*node.*(openclaw\.mjs|\$OCMJS|\$OPENCLAW_MJS).*gateway' "$f" 2>/dev/null; then
               echo "  ✓ $f"
             else
-              echo "  ✗ $f 缺少 exec node ... openclaw.mjs gateway 模式!"
+              echo "  ✗ $f 缺少 exec node ... gateway 模式!"
               FAIL=1
             fi
           done
