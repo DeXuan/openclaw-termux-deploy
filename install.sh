@@ -10,6 +10,40 @@ echo "  ║   One-command Android → AI server       ║"
 echo "  ╚══════════════════════════════════════════╝"
 echo ""
 
+# ── Abort handling ──
+cleanup_and_exit() {
+  echo ""
+  echo "  ─────────────────────────────────────────"
+  echo "  ⚠  Install interrupted by user (Ctrl+C)"
+  echo "  ─────────────────────────────────────────"
+  echo "  Partial install state:"
+  echo "    • Node.js & deps: may be installed"
+  echo "    • OpenClaw: may be partially installed"
+  echo "    • runit service: may or may not exist"
+  echo ""
+  echo "  To clean up and retry:"
+  echo "    npm uninstall -g openclaw 2>/dev/null"
+  echo "    rm -rf \$PREFIX/var/service/openclaw"
+  echo "    curl -fsSL ... | bash   # re-run installer"
+  echo ""
+  echo "  To resume manually:"
+  echo "    openclaw --version  # check if installed"
+  echo "    sv status openclaw  # check if service exists"
+  exit 130
+}
+trap cleanup_and_exit INT TERM
+
+# ── Confirmation ──
+echo "  This will install Node.js + OpenClaw + runit"
+echo "  on: $(getprop ro.product.model 2>/dev/null || echo 'this device')"
+echo "  Estimated time: 5-10 minutes"
+echo ""
+printf "  Continue? [Y/n] "
+read -r confirm
+case "$confirm" in
+  [Nn]|[Nn][Oo]) echo "  Aborted."; exit 0 ;;
+esac
+
 # ── Preflight ──
 if [ -z "$PREFIX" ] || [ ! -d "$PREFIX" ]; then
   echo "ERROR: This script must run inside Termux on Android."

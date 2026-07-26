@@ -242,6 +242,7 @@ deploy_menu() {
       [ -z "$target" ] && { show_menu; return; }
       read -r -p "  ${C_BOLD}用户${C_RESET} ${C_DIM}[u0_a129]${C_RESET}: " ssh_user
       ssh_user="${ssh_user:-u0_a129}"
+      confirm "确认部署到 $target？将安装 Node.js + OpenClaw + runit" || { show_menu; return; }
       log_step "远程部署 → $target"
       local inst="$SCRIPT_DIR/scripts/phone_install_openclaw.sh"
       [ ! -f "$inst" ] && inst="$SCRIPT_DIR/skill/scripts/phone_install_openclaw.sh"

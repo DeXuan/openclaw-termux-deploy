@@ -3,6 +3,16 @@
 # 用法: cat phone_install_openclaw.sh | ssh -p 8022 user@<IP> 'sh -'
 set -e
 
+# 中断清理提示
+cleanup_install() {
+  echo ""
+  echo "⚠ 安装被中断 (Ctrl+C)"
+  echo "  已安装的依赖包不会回滚 (pkg install 已完成)"
+  echo "  重新运行本脚本可继续 (幂等)"
+  exit 130
+}
+trap cleanup_install INT TERM
+
 echo "==> [1/5] 安装基础依赖与编译工具链"
 pkg update -y >/dev/null 2>&1 || pkg update -y
 pkg install -y nodejs git python make clang binutils termux-services
