@@ -1,0 +1,88 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please fill in the details below to help us reproduce and fix quickly.
+
+  - type: input
+    id: device
+    attributes:
+      label: Device Model
+      description: e.g. Redmi K60, Samsung S20, Pixel 6
+      placeholder: "Redmi K60"
+    validations:
+      required: true
+
+  - type: input
+    id: android
+    attributes:
+      label: Android Version
+      description: Settings → About Phone → Android Version
+      placeholder: "15"
+    validations:
+      required: true
+
+  - type: input
+    id: openclaw_version
+    attributes:
+      label: OpenClaw Version
+      description: Run `openclaw --version`
+      placeholder: "2026.7.1-2"
+    validations:
+      required: true
+
+  - type: input
+    id: node_version
+    attributes:
+      label: Node.js Version
+      description: Run `node --version`
+      placeholder: "v26.4.0"
+    validations:
+      required: false
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: Describe the bug — what did you expect, and what actually happened?
+      placeholder: |
+        1. Ran command: `openclaw gateway`
+        2. Expected: gateway starts on port 18789
+        3. Actual: error "openclaw: not found" in runit log
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: |
+        Run these commands and paste the output:
+        ```bash
+        cat scripts/phone_check_env.sh | sh -
+        tail -50 $PREFIX/var/log/sv/openclaw/current
+        ```
+      render: shell
+    validations:
+      required: false
+
+  - type: dropdown
+    id: pitfall
+    attributes:
+      label: Checked pitfall list?
+      description: Have you checked [pitfalls.md](https://github.com/DeXuan/openclaw-termux-deploy/blob/main/skill/references/pitfalls.md)?
+      options:
+        - "Not yet — will check now"
+        - "Yes — not covered by existing pitfalls"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Screenshots, error codes, anything else helpful.

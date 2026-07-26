@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/DeXuan/openclaw-termux-deploy/discussions
+    about: Ask questions, share ideas, or show off your setup
+  - name: 📖 Pitfall Reference
+    url: https://github.com/DeXuan/openclaw-termux-deploy/blob/main/skill/references/pitfalls.md
+    about: Check the 25 battle-tested fixes before filing a bug
+  - name: 🔒 Security Issue
+    url: https://github.com/DeXuan/openclaw-termux-deploy/security
+    about: Report security vulnerabilities privately
