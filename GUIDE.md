@@ -95,6 +95,8 @@ chmod +x openclaw-deploy
 ```
 
 > 📸 **截图位置：** 终端全屏截图，展示彩色 TUI 主菜单
+> <img width="707" height="664" alt="0" src="https://github.com/user-attachments/assets/7bce6753-11cb-4498-83a7-55861e39d81e" />
+
 
 ### 机队仪表盘
 
