@@ -24,7 +24,7 @@ def fetch():
     codes = ','.join(WATCHLIST.keys())
     resp = urllib.request.urlopen(f'http://qt.gtimg.cn/q={codes}', timeout=10).read()
     try: text = resp.decode('gbk')
-    except: text = resp.decode('utf-8', errors='replace')
+    except (UnicodeDecodeError, LookupError): text = resp.decode('utf-8', errors='replace')
     stocks = {}
     for line in text.strip().split(';'):
         if '=' not in line: continue
@@ -65,7 +65,7 @@ def push(text):
                 if line.startswith('FEISHU_') and '=' in line:
                     k, v = line.split('=', 1)
                     os.environ[k.strip()] = v.strip().strip('"')
-    except: return
+    except (FileNotFoundError, PermissionError): return
     r = subprocess.run(['python3', '-c', """
 import json, urllib.request, os
 token_resp = json.loads(urllib.request.urlopen(urllib.request.Request(
@@ -85,7 +85,8 @@ print("OK" if resp.get("code")==0 else f"FAIL:{resp.get('code')}")
 def load_state():
     try:
         with open(STATE_FILE) as f: return json.load(f)
-    except: return {}
+    except (FileNotFoundError, json.JSONDecodeError, PermissionError):
+        return {}
 
 def save_state(s):
     with open(STATE_FILE, 'w') as f: json.dump(s, f)

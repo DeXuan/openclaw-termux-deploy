@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/python3
 """基金周报 — 每周五22:00推送  cron: 0 22 * * 5"""
-import urllib.request, json, os, subprocess
+import urllib.request, urllib.error, json, os, subprocess
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
@@ -25,7 +25,8 @@ def fetch_one(code):
     try:
         d = json.loads(urllib.request.urlopen(req, timeout=10).read().decode("utf-8"))
         return [(i["FSRQ"], float(i["DWJZ"]), float(i.get("JZZZL",0) or 0)) for i in d["Data"]["LSJZList"]]
-    except: return []
+    except (urllib.error.URLError, json.JSONDecodeError, KeyError, OSError):
+        return []
 
 def push(text):
     subprocess.run(["python3", os.path.expanduser("~/feishu_push.py")],

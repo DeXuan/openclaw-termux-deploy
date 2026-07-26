@@ -28,7 +28,8 @@ def fetch_one(code):
     try:
         d = json.loads(urllib.request.urlopen(req, timeout=10).read().decode("utf-8"))
         return [(i["FSRQ"], float(i["DWJZ"]), float(i.get("JZZZL",0) or 0)) for i in d["Data"]["LSJZList"]]
-    except: return []
+    except (urllib.error.URLError, json.JSONDecodeError, KeyError, OSError):
+        return []
 
 def fetch_all():
     funds = {}
@@ -122,7 +123,8 @@ def analyze(funds, prev):
 def load_state():
     try:
         with open(STATE_FILE) as f: return json.load(f)
-    except: return {}
+    except (FileNotFoundError, json.JSONDecodeError, PermissionError):
+        return {}
 
 def save_state(funds, state):
     for code, f in funds.items():
