@@ -1,7 +1,7 @@
 # 机型适配矩阵与最佳实践
 
 > 本文档回答三个问题：**新机型怎么接入**、**已知机型有什么坑**、**怎么安全升级版本**。
-> 部署主流程见 [SKILL.md](../SKILL.md) 阶段 0-8；报错速查见 [pitfalls.md](pitfalls.md)（25 坑）。
+> 部署主流程见 [SKILL.md](../SKILL.md) 阶段 0-8；报错速查见 [pitfalls.md](pitfalls.md)（24 坑）。
 
 ## 0. 使用地图
 
@@ -77,12 +77,12 @@
 
 ### 工具版本组合（2026-07-18 全队定版，全部四连验证通过）
 
-| 设备 | OpenClaw | Node | libsqlite | Node 来源 |
-|---|---|---|---|---|
-| K60 | 2026.7.1-2 | 24.17.0 | 3.53.3 | 仓库（早期 nodejs-lts） |
-| MIX 2S | 2026.7.1-2 | 26.4.0 | 3.53.3 | 仓库（撤版前安装） |
-| Note 7 | 2026.7.1-2 | 26.4.0 | 3.53.3 | 仓库（撤版前安装） |
-| Note 4X | 2026.7.1-2 | 26.4.0 | 3.53.0 | **手动 deb + apt-mark hold** |
+| 设备 | OpenClaw | Node | libsqlite | Node 来源 | Hermes | Python | Hermes 渠道 |
+|---|---|---|---|---|---|---|---|
+| K60 | 2026.7.1-2 | 24.17.0 | 3.53.3 | 仓库（早期 nodejs-lts） | **0.19.0** | 3.14.6 | 飞书（WebSocket） |
+| MIX 2S | 2026.7.1-2 | 26.4.0 | 3.53.3 | 仓库（撤版前安装） | — | — | — |
+| Note 7 | 2026.7.1-2 | 26.4.0 | 3.53.3 | 仓库（撤版前安装） | **0.19.0** (2026-07-27, K60 venv tar 管道拷贝) | 3.14.6 | 飞书（WebSocket, AppID cli_aaec7d7077b85bde） |
+| Note 4X | 2026.7.1-2 | 26.4.0 | 3.53.0 | **手动 deb + apt-mark hold** | **0.19.0** (2026-07-27, Note 7 venv tar 管道拷贝, 踩坑31-34) | 3.14.6（从3.13升级，补cffi .so） | 待配飞书 |
 
 ### 新机型登记模板（部署完成后复制此行填入上面两表）
 
@@ -134,7 +134,3 @@ apt-mark hold nodejs          # 锁版，防 apt upgrade 回退到不合规版�
 - **白名单联动**：同一家庭宽带下所有设备出口 IPv4 相同 → 宽带重拨/换网后**所有 QQ bot 的白名单要一起更新**；白名单加好后无需重启，插件每分钟自动重试，约 1 分钟自愈
 - **PC 端连接脚本按设备命名**（sshk60 / sshmix2s / ssh4x / sshnote7…），每个脚本 Tailscale IP 优先 + 局域网/热点网关回退、独立 HostKeyAlias——别共用一个"sshphone"，机队一大就名不符实
 - **OpenClawX App 协议不匹配**：gateway 日志每 0.4s 刷 `protocol mismatch client=OpenClawX Node ... expected=4`（ua=Dart，来源 127.0.0.1）= 本机装的 OpenClawX App 客户端太旧，升级到协议 v4 版或卸载该 App 即止（费电+刷爆日志，不影响渠道功能）
-- **SSH 设备间互信**：多台设备间配置双向 SSH 免密（基于 Tailscale 固定 IP），实现 scp 互传、rsync 同步技能、互相监控 gateway。
-- **双机健康监控**：`pkg install cronie` + 注册 runit → 部署 `~/healthcheck.sh`（SSH 对端 curl gateway，异常时通过 openclaw agent 推送 QQ 告警）→ `crontab` 定时触发。正常静默，仅异常时消耗 token。
-- **IP 漂移检测**：移动设备（蜂窝/WiFi 切换）出口 IP 变化导致 QQ 白名单失效 → `~/check-ip.sh` 定时对比 `curl ip.sb` 结果 → 变化时 QQ 告警（含白名单更新提醒）。
-- **Node.js 性能优化**：修改 `$PREFIX/var/service/openclaw/run` 中 `NODE_OPTIONS`，添加 `--max-old-space-size=4096 --max-semi-space-size=128`。16GB 设备 heap 上限提升 300%，GC 间隔延长 3.6-8x。注意 `--initial-old-space-size` 会被 Node 安全策略拦截。

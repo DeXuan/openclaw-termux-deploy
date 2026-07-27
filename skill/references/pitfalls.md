@@ -1,8 +1,8 @@
-# 踩坑速查（25 坑全录）
+# 踩坑速查（26 坑全录）
 
 按报错现象查找。来源：2026-07 四台真机（K60 / MIX 2S / Note 7 / Note 4X）实战部署与全队升级。
 
-**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16/24/25 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15/22 · **升级 17/18/19/20** · 资源 23
+**按场景索引**：装机 1/2/3/21 · 模型 4 · 保活 5/6/10/16/24/25 · 自启 7/8/9 · 网络 11/12 · 渠道 13/14/15/22 · **升级 17/18/19/20** · 资源 23 · **换 Key 26**
 
 | # | 现象 | 原因 | 解法 |
 |---|------|------|------|
@@ -31,6 +31,8 @@
 | 23 | 双开 openclaw CLI（如两个 `channels login`）后 SSH 全断 exit 255、gateway 被杀重启 | 每个 CLI 都是完整 node 实例（数百 MB），3GB 机内存压爆触发 LMK 连坐；`channels status --probe` 同理过重卡死 | 单机同一时刻只跑**一个** CLI 实例；渠道验证改 grep 服务日志；gateway 靠 runit 自愈（15s） |
 | 24 | 改完 `plugins.allow` 重启后日志仍报 `plugins.allow is empty` | 修改配置时 gateway 正在运行，其收到 TERM 退出瞬间把内存里的旧配置**写回覆盖**了新文件（Note 7 实测中招，其余三台一次成功，属竞态） | 稳妥流程 `sv down` → 改配置 → `sv up`；或改完重启后 `grep "allow is empty"` 校验，仍在就再重启一次 |
 | 25 | runit 日志循环 `./run: exec: openclaw: not found`，但 SSH 里 `which openclaw` 和 `openclaw --version` 都正常 | Android/Termux **没有 `/usr/bin/env`**，npm 全局 bin symlink → `.mjs` 的 shebang `#!/usr/bin/env node` 在内核 `exec()` 时找不到解释器。**交互 shell（bash）会自行处理 shebang 所以人工测试正常，极具迷惑性** | 见下方详解 |
+
+| 26 | `openclaw onboard --alibaba-model-studio-api-key`（或 `--deepseek-api-key` 等）执行成功、`openclaw models list` Auth=yes，但 **E2E 仍然报 400/403 Auth 错误** | **`onboard --*-api-key` 只更新 `openclaw.json` 的 `models.providers.*.apiKey`（模型目录用），不更新 `openclaw-agent.sqlite` 的 `auth_profile_store` 表（Gateway 实际鉴权用）**。两个存储独立，Gateway 发起 API 调用时从 SQLite 取 key。 | 见下方详解（含 Python 一键修复脚本） |
 
 ## 坑 14 详解：QQ IP 白名单
 
@@ -80,6 +82,80 @@ chmod +x "$OPENCLAW_BIN"
 
 **预防**：`phone_setup_service.sh` v2.6+ 已在创建 runit 服务前自动执行方案 B，新部署不再踩此坑。
 
+## 坑 26 详解：`onboard --*-api-key` 不更新 SQLite auth store
+
+**现象**：`openclaw onboard --non-interactive --alibaba-model-studio-api-key "新key"` 执行成功，`openclaw models list` 显示 Auth=yes，但 E2E（`openclaw agent --agent main --message "只回复OK"`）仍然报 400/403 Auth 错误。直接 `curl` 用新 key 调 API 能通，排除 key 本身无效。
+
+**根因**：OpenClaw 有两套独立的 key 存储，`onboard --*-api-key` 只更新了第一套：
+
+| 存储层 | 位置 | 用途 | onboard 更新？ |
+|--------|------|------|:---:|
+| JSON config | `openclaw.json` → `models.providers.*.apiKey` | 模型目录（价格/能力） | ✅ |
+| JSON config | `~/.openclaw/agents/main/agent/models.json` → `providers.*.apiKey` | Agent 级模型配置 | ❌ |
+| **SQLite auth store** | `~/.openclaw/agents/main/agent/openclaw-agent.sqlite` → `auth_profile_store` 表 | **Gateway 实际鉴权取 key** | ❌ |
+
+Gateway 发起 API 调用时从 SQLite 的 `auth_profile_store` 取 key，JSON 文件里的 key 只用于模型目录展示。所以你换了 JSON 里的 key，Gateway 根本看不见。
+
+**诊断**：日志中 `profile=sha256:0a63006cdda5`（auth profile hash）与新旧 key 的 sha256 都对不上 → 确认 SQLite 里还有第三把更早的 key。
+
+```bash
+# 查 SQLite 里实际存的 key（会暴露明文）
+python3 -c "
+import sqlite3, json
+db = sqlite3.connect('$HOME/.openclaw/agents/main/agent/openclaw-agent.sqlite')
+row = db.execute(\"SELECT store_json FROM auth_profile_store WHERE store_key='primary'\").fetchone()
+data = json.loads(row[0])
+for p, cfg in data['profiles'].items():
+    print(f'{p}: {cfg[\"key\"][:30]}...')
+db.close()
+"
+```
+
+**修复**（Python 一键脚本，停 gateway → 更新 SQLite → 清 cooldown → 启 gateway）：
+
+```bash
+# 停 gateway
+export SVDIR=$PREFIX/var/service && sv down openclaw
+
+# 更新 key + 清 cooldown
+python3 -c "
+import sqlite3, json
+NEW_KEY = 'sk-新key'
+db = sqlite3.connect('$HOME/.openclaw/agents/main/agent/openclaw-agent.sqlite')
+
+# 1. 更新 auth_profile_store 的 key
+row = db.execute(\"SELECT store_json FROM auth_profile_store WHERE store_key='primary'\").fetchone()
+data = json.loads(row[0])
+data['profiles']['alibaba-model-studio:manual']['key'] = NEW_KEY
+db.execute(\"UPDATE auth_profile_store SET store_json=? WHERE store_key='primary'\", (json.dumps(data),))
+
+# 2. 清 auth cooldown（否则 Gateway 会跳过该 provider 不重试）
+row2 = db.execute(\"SELECT state_json FROM auth_profile_state WHERE state_key='primary'\").fetchone()
+sdata = json.loads(row2[0])
+us = sdata.get('usageStats', {}).get('alibaba-model-studio:manual', {})
+us['cooldownUntil'] = 0
+us['cooldownReason'] = ''
+us['errorCount'] = 0
+us['failureCounts'] = {}
+db.execute(\"UPDATE auth_profile_state SET state_json=? WHERE state_key='primary'\", (json.dumps(sdata),))
+db.commit()
+db.close()
+print('Done')
+"
+
+# 启 gateway + 验证
+sv up openclaw && sleep 20
+curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18789/  # → 200
+openclaw agent --agent main --message '只回复OK'                   # → OK
+```
+
+**预防**：
+1. **换 key 后必须跑 E2E**，`models list` Auth=yes 不足为凭
+2. 部署新设备首选 `openclaw onboard --non-interactive --auth-choice <provider>` **不带 `--skip-health`**，让 onboard 自己跑 E2E 验证（失败会报错）
+3. 手工换 key 时直接用上面的 Python 脚本，**同时更新 SQLite + 清 cooldown**，不要只跑 `onboard`
+
+**其他 provider 同理**：`--deepseek-api-key`、`--openai-api-key` 等所有 `--*-api-key` 参数都有相同问题。SQLite 里的 profile key 名是 `{provider}:manual`（如 `deepseek:default`、`openai:manual`），对应修改即可。
+
 ## 其他经验
 
 - **升级用金丝雀流程**（2026-07-18 全队 -2 升级实录）：单台先升（libsqlite → node 合规确认 → npm 升 openclaw → sv restart → 四连验证），全过再推其余设备。当天并行升 4 台的话会全队渠道离线——实际单台中招离线 40 分钟,其余 3 台无恙
@@ -91,3 +167,16 @@ chmod +x "$OPENCLAW_BIN"
 - **cmd 批处理写中文注释会炸**（GBK/UTF-8 编码问题）：.bat 文件保持纯 ASCII
 - **Termux 的 sshd 不校验用户名**，任意用户名映射到应用 UID；密码由 `passwd` 设置
 - **手机端媒体库不显示新文件**：Termux 直接写入的文件未被索引，文件管理器要按路径浏览
+
+## Hermes Agent 共部署坑（2026-07-27 K60 实战）
+
+| # | 现象 | 原因 | 解法 |
+|---|------|------|------|
+| 27 | `hermes-agent requires Python <3.14,>=3.11`（3.14.6 被拒） | Termux 仓库 Python 已到 3.14.6，Hermes v0.19.0 pyproject.toml `requires-python` 锁 `<3.14` | 改 `pyproject.toml` 的 `requires-python` 为 `">=3.11,<3.15"`；同时改 `hermes_cli/main.py` 的 `_print_fast_version_info()` 函数内 `PROJECT_ROOT` 引用（3.14 的模块级执行顺序暴露了旧 bug：该变量定义在函数调用之后，需在函数体内 `from pathlib import Path` + `Path(__file__).parent.parent.resolve()` 内联计算） |
+| 28 | pip 装 `.[termux]` 时 `psutil` 报 `platform android is not supported` | psutil PyPI 无 Android wheel，源码构建检查 platform 拒绝 | 先 `pkg install python-psutil python-cryptography rust binutils` 从 Termux 仓库预装系统包，然后 `python -m venv venv --system-site-packages` 创建 venv（继承系统 psutil/cryptography），再 `pip install -e '.[termux]'` |
+| 29 | runit `exec python -m hermes_cli gateway` 报 `No module named hermes_cli.__main__` | `hermes_cli` 没有 `__main__.py`，入口是 `venv/bin/hermes` CLI 脚本 | run 脚本用 `exec /path/to/venv/bin/hermes gateway`（不是 `python -m`） |
+| 30 | `config.yaml` 的 `default_provider`/`default_model` 不生效，始终走 OpenRouter | config.yaml 顶层 key 不是 `default_provider`/`default_model`，模型配置在 `model:` 段下 | 正确格式：`model: {name: qwen3.7-plus-2026-05-26, provider: openai-api}`（YAML 字典）。`OPENAI_API_KEY` + `OPENAI_BASE_URL` 写在 `.env` 里 |
+| 31 | `scp -r` 拷 venv 极慢（几千个小文件，>10 分钟未完成）| `scp -r` 对大量小文件每文件一次握手，LAN 下也慢 | **tar 管道直传**：`ssh src 'cd ~/.hermes/hermes-agent && tar czf - venv/' \| ssh dst 'cd ~/.hermes/hermes-agent && tar xzf -'`，58MB 压缩流秒传（Note 7→Note 4X 实测 <30 秒）|
+| 32 | Python 3.13→3.14 升级后 `ModuleNotFoundError: No module named '_cffi_backend'` | Termux `python` 包升级时不自动带 `python-cffi`，旧版 cffi .so 与新 Python ABI 不兼容 | 从另一台已装好的同版本设备 scp：`_cffi_backend.cpython-314-aarch64-linux-android.so` + `cffi/` 目录 → `$PREFIX/lib/python3.14/site-packages/`。同时删掉 venv 里的 pip 版 cryptography（`pip uninstall -y cryptography`），让 `--system-site-packages` venv 自动 fallback 到系统版 |
+| 33 | Note 4X/低端机 apt 下载极慢（`grimler.se` 国外源）| 旧部署未换国内源，84 个包 pending update | `echo "deb https://mirrors.ustc.edu.cn/termux/apt/termux-main stable main" > $PREFIX/etc/apt/sources.list` |
+| 34 | venv 跨设备移植后 cryptography 崩溃 | pip 安装的 `cryptography` 含 Rust 编译的 `_rust` 绑定，链接了源设备的系统库，目标设备 ABI 不兼容 | **移植 SOP**：① 目标设备 `pkg install python-cffi`（缺则从源设备 scp .so）② `pip uninstall -y cryptography` 删 venv 版 ③ 系统 cryptography 通过 `--system-site-packages` 自动接管 |
