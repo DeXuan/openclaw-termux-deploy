@@ -179,6 +179,4 @@ openclaw agent --agent main --message '只回复OK'                   # → OK
 | 31 | `scp -r` 拷 venv 极慢（几千个小文件，>10 分钟未完成）| `scp -r` 对大量小文件每文件一次握手，LAN 下也慢 | **tar 管道直传**：`ssh src 'cd ~/.hermes/hermes-agent && tar czf - venv/' \| ssh dst 'cd ~/.hermes/hermes-agent && tar xzf -'`，58MB 压缩流秒传（Note 7→Note 4X 实测 <30 秒）|
 | 32 | Python 3.13→3.14 升级后 `ModuleNotFoundError: No module named '_cffi_backend'` | Termux `python` 包升级时不自动带 `python-cffi`，旧版 cffi .so 与新 Python ABI 不兼容 | 从另一台已装好的同版本设备 scp：`_cffi_backend.cpython-314-aarch64-linux-android.so` + `cffi/` 目录 → `$PREFIX/lib/python3.14/site-packages/`。同时删掉 venv 里的 pip 版 cryptography（`pip uninstall -y cryptography`），让 `--system-site-packages` venv 自动 fallback 到系统版 |
 | 33 | Note 4X/低端机 apt 下载极慢（`grimler.se` 国外源）| 旧部署未换国内源，84 个包 pending update | `echo "deb https://mirrors.ustc.edu.cn/termux/apt/termux-main stable main" > $PREFIX/etc/apt/sources.list` |
-
-| 35 | runit gateway 秒崩无日志（MIX 2S 独有） | run 脚本 heredoc 中  没展开，导致 env 未加载、飞书凭证缺失、gateway 连不上直接退出 | heredoc 用  双引号保护变量展开（非 ），或写死绝对路径：。同时确保  在 gateway 前（非 ，坑29已记）
 | 34 | venv 跨设备移植后 cryptography 崩溃 | pip 安装的 `cryptography` 含 Rust 编译的 `_rust` 绑定，链接了源设备的系统库，目标设备 ABI 不兼容 | **移植 SOP**：① 目标设备 `pkg install python-cffi`（缺则从源设备 scp .so）② `pip uninstall -y cryptography` 删 venv 版 ③ 系统 cryptography 通过 `--system-site-packages` 自动接管 |
