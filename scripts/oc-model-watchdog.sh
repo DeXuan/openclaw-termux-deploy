@@ -1,61 +1,46 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# OpenClaw 模型看门狗 — 检测 401/403 自动切换有额度的模型
+# OpenClaw 模型看门狗 v2 — 从 openclaw.json 读取设备专属模型池，检测401/403自动轮换
 # cron: */5 * * * * ~/oc-model-watchdog.sh
 
 LOG="$HOME/.hermes/logs/oc-model-watchdog.log"
 OC_LOG="$PREFIX/var/log/sv/openclaw/current"
 OC_JSON="$HOME/.openclaw/openclaw.json"
-NOW=$(date +%s)
-WINDOW=$((5 * 60))  # 检查最近5分钟的日志
 
-# 所有可用模型（按优先级排列，定期更新）
-MODELS=(
-  "qwen-plus-2025-07-28"
-  "deepseek-v3.2"
-  "glm-5"
-  "qwen3-coder-plus"
-  "qwen3.7-max-2026-06-08"
-  "kimi-k2.7-code"
-  "deepseek-r1-distill-qwen-32b"
-  "qwen-plus"
-  "qwen3.6-plus"
-  "qwen-max"
-)
+# 检测最近日志中是否有401/403
+has_error() {
+  tail -100 "$OC_LOG" 2>/dev/null | grep -qE "401 Unauthorized|403.*quota|Free quota exhausted"
+}
 
-# 检查最近5分钟是否有401/403
-RECENT=$(grep -E "401|403|Free quota exhausted" "$OC_LOG" 2>/dev/null | tail -20)
-if [ -z "$RECENT" ]; then
+if ! has_error; then
   echo "$(date -Iseconds) OK" >> "$LOG"
+  tail -100 "$LOG" > "${LOG}.tmp" 2>/dev/null && mv "${LOG}.tmp" "$LOG"
   exit 0
 fi
 
-# 有错误—调当前模型到列表末尾，换下一个
-CURRENT=$(python3 -c "import json; c=json.load(open('$OC_JSON')); print(c['models']['providers']['alibaba-model-studio']['models'][0]['id'])" 2>/dev/null)
-echo "$(date -Iseconds) FAIL on $CURRENT — rotating" >> "$LOG"
+# 从 openclaw.json 读取当前模型池
+MODELS=$(python3 -c "
+import json
+with open('$OC_JSON') as f: c = json.load(f)
+models = c.get('models',{}).get('providers',{}).get('alibaba-model-studio',{}).get('models',[])
+print(' '.join([m['id'] for m in models]))
+")
+CURRENT=$(echo "$MODELS" | cut -d' ' -f1)
+REST=$(echo "$MODELS" | cut -d' ' -f2-)
 
-# 找到当前模型在列表中的位置，选下一个
-NEXT=""
-for i in "${!MODELS[@]}"; do
-  if [ "${MODELS[$i]}" = "$CURRENT" ]; then
-    n=$(( (i + 1) % ${#MODELS[@]} ))
-    NEXT="${MODELS[$n]}"
-    break
-  fi
-done
-[ -z "$NEXT" ] && NEXT="${MODELS[0]}"
+if [ -z "$REST" ]; then
+  echo "$(date -Iseconds) FAIL on $CURRENT — no fallback!" >> "$LOG"
+  exit 1
+fi
 
-# 构建新模型列表（NEXT放首位）
+NEXT=$(echo "$REST" | cut -d' ' -f1)
+echo "$(date -Iseconds) FAIL on $CURRENT → switching to $NEXT" >> "$LOG"
+
+# 轮换：当前模型移到末尾
 NEW_LIST="["
-first=true
-for m in "$NEXT"; do
-  $first && first=false || NEW_LIST+=", "
-  NEW_LIST+="{\"id\":\"$m\",\"name\":\"$m\"}"
+for m in $REST; do
+  NEW_LIST+="{\"id\":\"$m\",\"name\":\"$m\"}, "
 done
-for m in "${MODELS[@]}"; do
-  [ "$m" = "$NEXT" ] && continue
-  NEW_LIST+=", {\"id\":\"$m\",\"name\":\"$m\"}"
-done
-NEW_LIST+="]"
+NEW_LIST+="{\"id\":\"$CURRENT\",\"name\":\"$CURRENT\"}]"
 
 python3 -c "
 import json
@@ -63,7 +48,7 @@ with open('$OC_JSON') as f: c = json.load(f)
 c['models']['providers']['alibaba-model-studio']['models'] = $NEW_LIST
 with open('$OC_JSON', 'w') as f: json.dump(c, f, indent=2)
 print(f'Switched to $NEXT')
-" && export SVDIR="$PREFIX/var/service" && sv restart openclaw 2>&1 >> "$LOG"
+" && export SVDIR="$PREFIX/var/service" && sv restart openclaw >> "$LOG" 2>&1
 
-echo "$(date -Iseconds) switched to $NEXT" >> "$LOG"
-tail -100 "$LOG" > "${LOG}.tmp" && mv "${LOG}.tmp" "$LOG"
+echo "$(date -Iseconds) now: $NEXT" >> "$LOG"
+tail -100 "$LOG" > "${LOG}.tmp" 2>/dev/null && mv "${LOG}.tmp" "$LOG"
