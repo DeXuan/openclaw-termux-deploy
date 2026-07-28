@@ -1,0 +1,7 @@
+model:
+  name: gui-plus
+  provider: openai-api
+fallback_model:  - model: qwen3-coder-plus-2025-09-23
+    provider: openai-api  - model: qwen3-coder-plus-2025-07-22
+    provider: openai-api  - model: qwen3-coder-plus
+    provider: openai-api

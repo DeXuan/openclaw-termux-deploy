@@ -1,0 +1,7 @@
+model:
+  name: qwq-plus
+  provider: openai-api
+fallback_model:  - model: qvq-plus
+    provider: openai-api  - model: qvq-max
+    provider: openai-api  - model: gui-plus-2026-02-26
+    provider: openai-api
