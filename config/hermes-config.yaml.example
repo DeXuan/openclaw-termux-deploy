@@ -1,0 +1,23 @@
+#==============================================================================
+# Hermes Agent 模型配置模板
+# 复制到 ~/.hermes/config.yaml
+#==============================================================================
+
+# ── 主模型 ──
+model:
+  name: qwen3.7-plus-2026-05-26
+  provider: openai-api
+
+# ── 后备模型（主模型不可用时自动切换）──
+fallback_model:
+  - model: qwen3-coder-plus-2025-09-23
+    provider: openai-api
+  - model: qwen3-coder-plus-2025-07-22
+    provider: openai-api
+  - model: qwen3-coder-plus
+    provider: openai-api
+
+# ── 各设备当前使用模型 ──
+# K60:    kimi-k2-thinking (fallback: Moonshot-Kimi-K2-Instruct, MiniMax-M2.5, MiniMax-M2.1)
+# MIX 2S: gui-plus (fallback: qwen3-coder-plus 系列)
+# Note 7: qwq-plus (fallback: qwen3-coder-plus-2025-09-23)
