@@ -286,7 +286,7 @@ check_menu() {
   menu_item "3" "🍃" "Note 7 远程体检" "SSH 到 Note 7 诊断"
   menu_item "4" "⚡" "MIX 2S 远程体检" "SSH 到 MIX 2S 诊断"
   menu_item "5" "🪨" "Note 4X 远程体检" "SSH 到 Note 4X 诊断"
-  menu_item "6" "📊" "全队体检"        "四台设备一键体检"
+  menu_item "6" "📊" "全队体检+报告"    "四台扫描→HTML报告→桌面"
   echo -e "  ${C_BOLD}[0]${C_RESET} 返回"
   echo
   read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" choice
@@ -300,14 +300,18 @@ check_menu() {
     3) spinner_start "连接 Note 7..."; ssh_device Note7 "sh -" < "$ck" 2>&1; spinner_stop ;;
     4) spinner_start "连接 MIX 2S..."; ssh_device MIX2S "sh -" < "$ck" 2>&1; spinner_stop ;;
     5) spinner_start "连接 Note 4X..."; ssh_device Note4X "sh -" < "$ck" 2>&1; spinner_stop ;;
-    6)
-      for dev in K60 Note7 MIX2S Note4X; do
-        echo -e "\n  ${C_BOLD}── ${dev} ──${C_RESET}"
-        spinner_start "检查 $dev..."
-        ssh_device "$dev" "sh -" < "$ck" 2>&1 || echo "  ${ICO_FAIL} 不可达"
-        spinner_stop
-      done
-      ;;
+	    6)
+	      local reporter="$SCRIPT_DIR/scripts/generate_fleet_report.sh"
+	      if [ -f "$reporter" ]; then
+	        spinner_start "并行扫描四台+生成HTML报告..."
+	        bash "$reporter" 2>&1
+	        spinner_stop
+	      else
+	        for dev in K60 Note7 MIX2S Note4X; do
+	          ssh_device "$dev" "sh -" < "$ck" 2>&1 || true
+	        done
+	      fi
+	      ;;
   esac
   press_enter; show_menu
 }

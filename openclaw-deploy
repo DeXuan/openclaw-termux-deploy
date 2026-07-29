@@ -120,6 +120,17 @@ if [ $# -gt 0 ]; then
       exit 0
       ;;
     fleet-scan|fs)
+      # --html 标志: 生成 HTML 报告到桌面
+      if [ "${2:-}" = "--html" ] || [ "${2:-}" = "-H" ]; then
+        local reporter="$SCRIPT_DIR/scripts/generate_fleet_report.sh"
+        if [ -f "$reporter" ]; then
+          bash "$reporter" "${3:-}"
+        else
+          echo "错误: 找不到 generate_fleet_report.sh"
+          exit 1
+        fi
+        exit 0
+      fi
       fs="$SCRIPT_DIR/scripts/fleet_scan.sh"
       [ ! -f "$fs" ] && fs="$SCRIPT_DIR/skill/scripts/fleet_scan.sh"
       targets=("${@:2}")
@@ -130,7 +141,7 @@ if [ $# -gt 0 ]; then
         echo -e "\n${C_BOLD}═══ $dev ═══${C_RESET}"
         cat "$fs" | ssh_device "$dev" 'bash -' 2>&1 || echo "  不可达"
       done
-      echo -e "\n${C_DIM}提示: 生成 HTML 报告请使用桌面端运行 fleet_scan.sh 并重定向输出${C_RESET}"
+      echo -e "\n${C_DIM}提示: 加 --html 自动生成 HTML 报告到桌面${C_RESET}"
       exit 0
       ;;
     hermes|hm)
