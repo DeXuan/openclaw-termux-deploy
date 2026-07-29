@@ -355,13 +355,13 @@ dashboard_menu() {
     printf "  ${C_DIM}${BOX_V}${C_RESET}   在线: %s\n" "$up"
   }
 
-  print_device_row "🔥" "K60"    "随身主力机" "$k60_gw" "$k60_mem" "$k60_disk" "$k60_swap" "$k60_up"
+  print_device_row "🔥" "K60"    "OC+HM 主力机" "$k60_gw" "$k60_mem" "$k60_disk" "$k60_swap" "$k60_up"
   echo -e "  ${C_DIM}${BOX_V}${C_RESET}"
-  print_device_row "🍃" "Note 7" "家里轻量机" "$n7_gw"   "$n7_mem"  "$n7_disk"  "$n7_swap"  "$n7_up"
+  print_device_row "🍃" "Note 7" "OC+HM 轻量机" "$n7_gw"   "$n7_mem"  "$n7_disk"  "$n7_swap"  "$n7_up"
   echo -e "  ${C_DIM}${BOX_V}${C_RESET}"
-  print_device_row "⚡" "MIX 2S" "稳定副机"   "$mx_gw"   "$mx_mem"  "$mx_disk"  "$mx_swap"  "$mx_up"
+  print_device_row "⚡" "MIX 2S" "OC+HM 副机"   "$mx_gw"   "$mx_mem"  "$mx_disk"  "$mx_swap"  "$mx_up"
   echo -e "  ${C_DIM}${BOX_V}${C_RESET}"
-  print_device_row "🪨" "Note4X" "韧性备机"   "$n4_gw"   "$n4_mem"  "$n4_disk"  "$n4_swap"  "$n4_up"
+  print_device_row "🪨" "Note4X" "OC 韧性备机"   "$n4_gw"   "$n4_mem"  "$n4_disk"  "$n4_swap"  "$n4_up"
   echo -e "  ${C_DIM}${BOX_BL}$(printf "${BOX_H}%.0s" $(seq 1 56))${BOX_BR}${C_RESET}"
 
   echo
@@ -378,10 +378,11 @@ service_menu() {
   clear
   header
   echo -e "  ${C_BOLD}${C_WHITE}⚙️ 服务管理${C_RESET}\n"
-  menu_item "1" "📊" "本机状态"        "gateway HTTP + 进程信息"
-  menu_item "2" "🔄" "本机重启"        "重启 gateway 服务"
-  menu_item "3" "📋" "本机日志"        "实时跟踪 gateway 日志"
-  menu_item "4" "🔥" "远程重启 K60"    "SSH 到 K60 重启 gateway"
+  menu_item "1" "📊" "本机 OC 状态"   "OpenClaw gateway HTTP + 进程"
+  menu_item "2" "🔄" "本机 OC 重启"   "sv restart openclaw"
+  menu_item "3" "🧠" "本机 HM 状态"   "Hermes gateway 状态 + E2E"
+  menu_item "4" "📋" "本机日志"        "实时跟踪 gateway 日志"
+  menu_item "5" "🔥" "远程重启 K60"    "SSH 到 K60 重启 gateway"
   menu_item "5" "🍃" "远程重启 N7"     "SSH 到 Note 7 重启 gateway"
   echo -e "  ${C_BOLD}[0]${C_RESET} 返回"
   echo

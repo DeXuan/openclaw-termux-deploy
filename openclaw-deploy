@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 #==============================================================================
-# OpenClaw Deploy — Termux Fleet Management Toolbox
-# 用法: ./openclaw-deploy           交互式 TUI
-#       ./openclaw-deploy dashboard 机队仪表盘
-#       ./openclaw-deploy wizard    新手向导
-#       ./openclaw-deploy check     全队体检
+# OpenClaw + Hermes Deploy — Termux Fleet Management Toolbox
+# 用法: ./openclaw-deploy              交互式 TUI
+#       ./openclaw-deploy dashboard    机队仪表盘
+#       ./openclaw-deploy wizard       新手向导
+#       ./openclaw-deploy check        全队体检
+#       ./openclaw-deploy fleet-scan   全队深度体检(9维+HTML报告)
+#       ./openclaw-deploy hermes        Hermes 服务管理
 #==============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 source "$SCRIPT_DIR/lib/menus.sh"
-VERSION="1.0.0"
+VERSION="2.0.0"
 
 # ═══ Guard ═══
 require_openclaw() {
@@ -117,20 +119,76 @@ if [ $# -gt 0 ]; then
       cat "$inst" | ssh -p 8022 "$user@$target" 'sh -'
       exit 0
       ;;
+    fleet-scan|fs)
+      fs="$SCRIPT_DIR/scripts/fleet_scan.sh"
+      [ ! -f "$fs" ] && fs="$SCRIPT_DIR/skill/scripts/fleet_scan.sh"
+      targets=("${@:2}")
+      if [ ${#targets[@]} -eq 0 ] || [ "${targets[0]}" = "--all" ] || [ "${targets[0]}" = "-a" ]; then
+        targets=(K60 Note7 MIX2S Note4X)
+      fi
+      for dev in "${targets[@]}"; do
+        echo -e "\n${C_BOLD}═══ $dev ═══${C_RESET}"
+        cat "$fs" | ssh_device "$dev" 'bash -' 2>&1 || echo "  不可达"
+      done
+      echo -e "\n${C_DIM}提示: 生成 HTML 报告请使用桌面端运行 fleet_scan.sh 并重定向输出${C_RESET}"
+      exit 0
+      ;;
+    hermes|hm)
+      action="${2:-status}"; target="${3:-}"
+      case "$action" in
+        status|s)
+          if [ -z "$target" ] || [ "$target" = "--all" ] || [ "$target" = "-a" ]; then
+            for dev in K60 Note7 MIX2S; do
+              echo -e "\n${C_BOLD}─── $dev Hermes ───${C_RESET}"
+              ssh_device "$dev" "export SVDIR=\$PREFIX/var/service && sv status hermes-gateway 2>&1" || echo "  不可达"
+            done
+          else
+            ssh_device "$target" "export SVDIR=\$PREFIX/var/service && sv status hermes-gateway 2>&1" || echo "  不可达"
+          fi
+          ;;
+        restart|up|down)
+          if [ -z "$target" ]; then
+            echo "用法: $0 hermes $action <K60|Note7|MIX2S|--all>"
+            exit 1
+          fi
+          if [ "$target" = "--all" ] || [ "$target" = "-a" ]; then
+            for dev in K60 Note7 MIX2S; do
+              echo -e "${C_YELLOW}${action} hermes on $dev...${C_RESET}"
+              ssh_device "$dev" "export SVDIR=\$PREFIX/var/service && sv $action hermes-gateway 2>&1" || echo "  不可达"
+            done
+          else
+            echo -e "${C_YELLOW}${action} hermes on $target...${C_RESET}"
+            ssh_device "$target" "export SVDIR=\$PREFIX/var/service && sv $action hermes-gateway 2>&1" || echo "  不可达"
+          fi
+          ;;
+        e2e|test)
+          target="${target:-K60}"
+          echo -e "${C_YELLOW}Hermes E2E test on $target...${C_RESET}"
+          ssh_device "$target" 'cd ~/.hermes && source .env && timeout 20 hermes chat -q "只回复OK" --yolo --max-turns 1 2>&1' || echo "  失败"
+          ;;
+        *)
+          echo "用法: $0 hermes [status|restart|e2e] [K60|Note7|MIX2S|--all]"
+          exit 1
+          ;;
+      esac
+      exit 0
+      ;;
     version|--version|-v)
       echo "openclaw-deploy v$VERSION"
       exit 0
       ;;
     help|--help|-h)
-      echo "openclaw-deploy v$VERSION — OpenClaw Termux 机队管理工具箱"
+      echo "openclaw-deploy v$VERSION — OpenClaw + Hermes Termux 机队管理工具箱"
       echo ""
       echo "命令:"
-      echo "  dashboard, d        机队仪表盘 (4台设备)"
+      echo "  dashboard, d         机队仪表盘 (OC+HM 双引擎)"
       echo "  dashboard --json    机队状态 (JSON 输出)"
       echo "  wizard, w           新手部署向导"
-      echo "  check [dev...]      全队体检 (默认 K60/Note7/MIX2S/Note4X)"
-      echo "  logs <dev> [n]      查看远程日志 (--all 全队)"
-      echo "  service <action> <d> 服务管理 (--all 全队操作)"
+      echo "  check [dev...]       全队体检 (默认四台)"
+      echo "  fleet-scan, fs [dev] 全队深度体检 (9维+并行+HTML报告)"
+      echo "  logs <dev> [n]       查看远程日志 (--all 全队)"
+echo "  service <action> <d>  OpenClaw 服务管理 (--all 全队)"
+echo "  hermes, hm <action>   Hermes 管理 (status/restart/e2e)"
       echo "  install <dev> [usr] 远程部署"
       echo "  version             版本号"
       echo "  help                帮助信息"
@@ -138,15 +196,15 @@ if [ $# -gt 0 ]; then
       echo "设备名: K60 | Note7 | MIX2S | Note4X"
       echo ""
       echo "示例:"
-      echo "  ./openclaw-deploy dashboard --json"
-      echo "  ./openclaw-deploy logs Note7 100"
-      echo "  ./openclaw-deploy logs --all 30"
-      echo "  ./openclaw-deploy service restart MIX2S"
+      echo "  ./openclaw-deploy fleet-scan --all"
+      echo "  ./openclaw-deploy hermes status --all"
+      echo "  ./openclaw-deploy hermes e2e K60"
+      echo "  ./openclaw-deploy hermes restart MIX2S"
       echo "  ./openclaw-deploy service restart --all"
-      echo "  ./openclaw-deploy check K60 Note7 MIX2S Note4X"
+      echo "  ./openclaw-deploy check --all"
       exit 0
       ;;
-    *) echo "未知命令: $1"; echo "用法: $0 [dashboard|wizard|check|logs|service|install|version|help]"; exit 1 ;;
+    *) echo "未知命令: $1"; echo "用法: $0 [dashboard|wizard|check|fleet-scan|logs|service|hermes|install|version|help]"; exit 1 ;;
   esac
 fi
 

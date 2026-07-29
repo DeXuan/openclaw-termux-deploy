@@ -201,7 +201,8 @@ DEVICES=(
 DEVICE_NAMES=("K60" "Note7" "MIX2S" "Note4X")
 DEVICE_EMOJI=("🔥" "🍃" "⚡" "🪨")
 DEVICE_LABELS=("随身主力机" "家里轻量机" "稳定副机" "韧性备机")
-DEVICE_ROLES=("QQ+飞书+微信" "QQ+飞书" "QQ+飞书" "QQ+飞书")
+DEVICE_ROLES=("OC+HM双引擎" "OC+HM双引擎" "OC+HM双引擎" "OpenClaw")
+DEVICE_HERMES=("v0.19.0" "v0.19.0" "v0.19.0" "—")
 
 # ═══ SSH ═══
 ssh_device() {
@@ -216,6 +217,17 @@ ssh_device() {
 check_gateway() {
   local target=${1:-http://127.0.0.1:18789/}
   curl -s -o /dev/null -w '%{http_code}' --connect-timeout 5 "$target" 2>/dev/null || echo "fail"
+}
+
+check_hermes() {
+  # Hermes doesn't expose HTTP; check process + feishu connection
+  export SVDIR="$PREFIX/var/service"
+  local sv_status; sv_status=$(sv status hermes-gateway 2>/dev/null | head -1 || echo "N/A")
+  if echo "$sv_status" | grep -q "run:"; then
+    echo "run"
+  else
+    echo "down"
+  fi
 }
 
 # ═══ Confirmation ═══
@@ -242,7 +254,7 @@ header() {
   echo "        ╚██████╔╝██║     ███████╗██║ ╚████║"
   echo "         ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝"
   echo -e "${C_RESET}"
-  echo -e "  ${C_BOLD}${C_WHITE}OpenClaw${C_RESET}${C_DIM} · Termux 机队管理工具箱${C_RESET}"
+  echo -e "  ${C_BOLD}${C_WHITE}OpenClaw + Hermes${C_RESET}${C_DIM} · Termux 机队管理工具箱${C_RESET}"
   echo -e "  ${C_DIM}${BOX_H}$(printf "${BOX_H}%.0s" $(seq 1 38))${C_RESET}"
   echo
 }
