@@ -1,9 +1,39 @@
-# OpenClaw 机队设备连接信息
-# 部署到 ~/.fleet-devices.conf（K60 上）
-# IP 修改请同步更新 lib/common.sh 的 DEVICES 数组
-# 格式: DEVICE_SSH="user@ip:port"
+#==============================================================================
+# 机队设备配置模板 — 复制到 ~/.fleet-devices.conf 并修改
+# 规范来源: config/devices.conf（所有脚本统一 source 此文件）
+#==============================================================================
 
-K60_SSH="u0_a129@100.118.60.29:8022"
-NOTE7_SSH="u0_a171@100.91.94.44:8022"
-MIX2S_SSH="u0_a129@100.104.72.125:8022"
-NOTE4X_SSH="u0_a129@192.168.1.19:8022"
+# ── SSH 连接信息 ──
+DEV_SSH_K60="u0_a129@100.118.60.29:8022"
+DEV_SSH_NOTE7="u0_a171@100.91.94.44:8022"
+DEV_SSH_MIX2S="u0_a129@100.104.72.125:8022"
+DEV_SSH_NOTE4X="u0_a129@192.168.1.19:8022"
+
+# ── 设备元数据 ──
+DEV_LABEL_K60="随身主力机"
+DEV_LABEL_NOTE7="家里轻量机"
+DEV_LABEL_MIX2S="稳定副机"
+DEV_LABEL_NOTE4X="韧性备机"
+
+DEV_ROLE_K60="OC+HM双引擎"
+DEV_ROLE_NOTE7="OC+HM双引擎"
+DEV_ROLE_MIX2S="OC+HM双引擎"
+DEV_ROLE_NOTE4X="OpenClaw"
+
+DEV_HERMES_K60="v0.19.0"
+DEV_HERMES_NOTE7="v0.19.0"
+DEV_HERMES_MIX2S="v0.19.0"
+DEV_HERMES_NOTE4X="—"
+
+# ── 自愈监控配对 (TARGET SLEEP SSH_FAIL_ALERT) ──
+HEALTHCHECK_TARGET_K60="u0_a171@100.91.94.44:8022 20 1"
+HEALTHCHECK_TARGET_NOTE7="u0_a129@100.118.60.29:8022 20 1"
+HEALTHCHECK_TARGET_MIX2S="u0_a129@100.118.60.29:8022 25 1"
+HEALTHCHECK_TARGET_NOTE4X="u0_a129@192.168.1.23:8022 30 0"
+
+# ── 设备遍历列表 ──
+FLEET_DEVICES=("K60" "Note7" "MIX2S" "Note4X")
+FLEET_HERMES_DEVICES=("K60" "Note7" "MIX2S")
+
+# ── 本地覆盖（勿提交到 git）──
+# [ -f "$HOME/.fleet-devices.local" ] && source "$HOME/.fleet-devices.local"
