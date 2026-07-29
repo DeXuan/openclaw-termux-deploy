@@ -72,7 +72,7 @@ FS_CONN=$(grep -c "feishu.*WebSocket client started" "$OC_LOG" 2>/dev/null || ec
 echo "  飞书(OC): started×$FS_CONN"
 
 # 微信
-WX_INSTALLED=$(ls ~/.openclaw/npm/projects/ 2>/dev/null | grep -c weixin || echo 0)
+WX_INSTALLED=$(find ~/.openclaw/npm/projects/ -maxdepth 1 -name "*weixin*" 2>/dev/null | wc -l || echo 0)
 WX_LOG=$(grep -c "openclaw-weixin.*connected\|openclaw-weixin.*login" "$OC_LOG" 2>/dev/null || echo 0)
 echo "  微信: $([ $WX_INSTALLED -gt 0 ] && echo "已安装, log×$WX_LOG" || echo "未安装")"
 
