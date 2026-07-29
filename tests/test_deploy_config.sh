@@ -13,15 +13,13 @@ export HOME="$TMPDIR/home"
 mkdir -p "$HOME/.openclaw" "$HOME/.hermes"
 echo '{"plugins":{"entries":{},"allow":[]}}' > "$HOME/.openclaw/openclaw.json"
 
-# Mock python3
-cat > "$TMPDIR/py" << 'PYEOF'
+# Mock python3 — 用 PATH 优先而非 export -f（跨平台兼容）
+cat > "$TMPDIR/python3" << 'PYEOF'
 #!/bin/bash
 echo "$*" >> "$HOME/py-log"
 echo "OK"
 PYEOF
-chmod +x "$TMPDIR/py"
-python3() { "$TMPDIR/py" "$@"; }
-export -f python3
+chmod +x "$TMPDIR/python3"
 export PATH="$TMPDIR:$PATH"
 
 DEPLOY="$SCRIPT_DIR/../scripts/deploy-model-config.sh"
@@ -52,4 +50,4 @@ test "BAILIAN_API_KEY后备→exit 0" "0" "$RC"
 OUT=$(API_KEY="sk-SECRET-KEY-12345" DEVICE="K60" bash "$DEPLOY" 2>&1) && RC=$? || RC=$?
 assert_contains "Key不泄露" "" "$(echo "$OUT" | grep "SECRET-KEY" || echo "")"
 
-summary
+set +e; summary
