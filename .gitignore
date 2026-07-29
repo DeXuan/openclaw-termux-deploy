@@ -11,6 +11,10 @@ Thumbs.db
 # Claude Code (local config)
 .claude/
 
+# Secrets
+*.env
+!config/.env.example
+
 # Termux temp
 *.log
 *.bak

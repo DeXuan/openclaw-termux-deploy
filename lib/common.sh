@@ -260,7 +260,7 @@ header() {
 }
 
 # ═══ Fleet Status Bar (parallel SSH, cached 60s) ═══
-FLEET_CACHE_FILE="${TMPDIR:-/tmp}/openclaw-fleet-cache"
+FLEET_CACHE_FILE="${TMPDIR:-$HOME}/openclaw-fleet-cache"
 FLEET_CACHE_TTL=60
 
 fleet_status_bar() {

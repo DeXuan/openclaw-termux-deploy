@@ -9,7 +9,7 @@ description: 在安卓手机上通过 Termux 完整部署 OpenClaw AI 网关 + H
 手机端只需少量手动步骤（会明确标注 📱）。
 
 **核心原则**：每个阶段结束必须通过"验证门"才能进入下一阶段；任何报错先查
-[references/pitfalls.md](references/pitfalls.md)（24 个已知坑的现象→解法速查）。
+[references/pitfalls.md](references/pitfalls.md)（34 个已知坑的现象→解法速查（主表1-26 + Hermes 27-34））。
 
 **机型差异**：接入新设备，按 [references/device-matrix.md](references/device-matrix.md) §1「新机型接入工作流」
 走：识别（getprop）→ 决策树对号 → 皮肤/硬件注意项叠加 → 部署 → **登记回矩阵**。

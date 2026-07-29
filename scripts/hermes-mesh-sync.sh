@@ -52,7 +52,7 @@ for entry in "${PEERS[@]}"; do
   peer_ip=""
   for try in "$ts_ip" "$lan_ip"; do
     [ "$try" = "0" ] && continue
-    if ssh $SSH_OPTS "user@$try" 'echo OK' 2>/dev/null; then
+    if ssh $SSH_OPTS "u0_a129@$try" 'echo OK' 2>/dev/null; then
       peer_ip="$try"; break
     fi
   done

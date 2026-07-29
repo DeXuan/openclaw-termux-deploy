@@ -1,8 +1,8 @@
 # OpenClaw Deploy — 使用指南
 
-> **OpenClaw Termux 机队管理工具箱** · 让安卓手机变成 24/7 AI 机器人服务器
+> **OpenClaw + Hermes Termux 机队管理工具箱** · 让安卓手机变成 24/7 AI 机器人服务器
 >
-> 支持机型：Redmi K60 / MIX 2S / Note 7 / Note 4X | 全队定版：OpenClaw 2026.7.1-2
+> 支持机型：Redmi K60 / MIX 2S / Note 7 / Note 4X | 全队定版：OpenClaw 2026.7.1-2 / Hermes v0.19.0
 
 ---
 
@@ -456,37 +456,66 @@ cd openclaw-termux-deploy && git pull
 
 ---
 
+## Hermes Agent 共部署 🧠
+
+三台设备 (K60 / MIX 2S / Note 7) 同时运行 OpenClaw (Node.js) 和 Hermes Agent (Python v0.19.0)，
+独立 runit 服务、独立端口、互不冲突。
+
+```bash
+# Hermes 管理
+./openclaw-deploy hermes status --all     # 三台 Hermes 状态
+./openclaw-deploy hermes e2e K60          # E2E 测试 (只回复OK)
+./openclaw-deploy hermes restart MIX2S    # 重启 Hermes
+
+# 手动运维
+export SVDIR=$PREFIX/var/service
+sv status hermes-gateway
+tail -f $PREFIX/var/log/sv/hermes-gateway/current
+cd ~/.hermes && source .env && hermes chat -q "OK" --yolo --max-turns 1
+```
+
+## TencentDB 记忆插件 🧬
+
+腾讯云开源的四层渐进记忆系统 v1.0.1 (L0 对话采集 → L1 事实提取 → L2 向量搜索 → L3 场景记忆)。
+K60 / MIX 2S / Note 7 三台已部署。
+
+```bash
+openclaw plugins list | grep tencentdb         # 状态
+ls ~/.openclaw/memory-tdai/{conversations,records}/  # 数据
+tail -f $PREFIX/var/log/sv/openclaw/current | grep memory-tdai
+```
+> Android/Termux 上 sqlite-vec 降级模式运行（glibc ABI），向量搜索不可用。
+
+## 全队深度体检 📊
+
+`fleet_scan.sh` — 并行 4 台、9 维度扫描（硬件/版本/资源/服务/渠道/模型链/记忆/异常），
+PC 端运行自动生成 HTML 报告到桌面。
+
+```bash
+# CLI 模式
+./openclaw-deploy fleet-scan --all
+
+# 桌面端生成 HTML 报告
+cat scripts/fleet_scan.sh | ssh device 'bash -' > scan.txt
+# 汇总后生成 fleet_health_report.html
+```
+
 ## 进阶玩法
 
-### 多设备并行体检
-
-```bash
-# 并行检查两台设备
-for dev in K60 Note7; do
-  (ssh_device "$dev" "sh -" < scripts/phone_check_env.sh > "${dev}_report.txt" 2>&1) &
-done
-wait
-echo "报告已生成: K60_report.txt Note7_report.txt"
-```
-
-### 定时仪表盘快照
-
-```bash
-# 每天 9 点记录机队状态
-# crontab: 0 9 * * * ~/snapshot.sh
-#!/bin/bash
-cd ~/openclaw-termux-deploy
-./openclaw-deploy dashboard > "/tmp/fleet-$(date +%Y%m%d-%H%M).txt" 2>&1
-```
-
-### 自愈系统 + QQ 告警
+### 自愈系统 + 飞书告警
 
 部署自愈系统后，gateway 异常时：
 1. 对端设备自动 SSH 重启 gateway（最多 2 次，间隔 10 分钟冷却）
-2. 重启失败 → 通过 QQ 机器人推送告警消息
-3. 本地资源保护同步工作：磁盘 >90% 自动清理、内存不足自动重启
+2. 重启失败 → 飞书推送告警
+3. 本地资源保护：磁盘 >90% 自动清理、内存不足自动重启
 
-**建议：** 给机队开一个单独 QQ 群，拉入所有机器人的 QQ 号，告警消息实时推送。
+### 金丝雀升级
+
+```bash
+./openclaw-deploy update    # TUI 菜单选「滚动升级全队」
+# 或命令行:
+bash scripts/rolling-upgrade.sh  # preflight→canary(Note7)→逐台→摘要
+```
 
 ---
 

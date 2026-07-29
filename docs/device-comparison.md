@@ -1,19 +1,19 @@
 # OpenClaw 安卓手机机队
 
-> 最后更新：2026-07-23 | 全队定版：OpenClaw 2026.7.1-2
+> 最后更新：2026-07-29 | 全队定版：OpenClaw 2026.7.1-2 / Hermes v0.19.0
 >
-> **全队就绪：** 4 机 SSH 互信 · crond 自愈全覆盖 · TS 三机互联 · 59 技能三机同步 · QQ+飞书全队双活
+> **全队就绪：** 4 机 SSH 互信 · crond 自愈全覆盖 · TS 三机互联 · OC+HM 双引擎 · QQ+飞书全队双活
 
 ## 机队概览
 
 四台退役安卓手机组成 OpenClaw 机器人机队，Termux + runit 保活，K60/Note 7/MIX 2S 三台 Tailscale 组网，Note 4X 仅 LAN。QQ + 飞书全队双活，K60 额外保留微信 iLink。4 机 SSH 全互信 + crond 自愈监控全覆盖。
 
-| 设备 | 代号 | SoC | RAM | 系统 | 角色 | 渠道 |
-|---|---|---|---|---|---|---|
-| **K60** | mondrian | 8+ Gen 1 | 16GB | A15 | 🥇 随身主力 | QQ + 飞书 + 微信 |
-| **Note 7** | lavender | 660 | 6GB | A10 | 🥈 家里轻量 | QQ + 飞书 |
-| **MIX 2S** | polaris | 845 | 6GB | A10 | 🥉 稳定副机 | QQ + 飞书 |
-| **Note 4X** | mido | 625 | 3GB | A7 | 🏅 韧性备机 | QQ + 飞书 |
+| 设备 | 代号 | SoC | RAM | 系统 | OpenClaw | Hermes | 记忆 | 角色 | 渠道 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **K60** | mondrian | 8+ Gen 1 | 16GB | A15 | 2026.7.1-2 | v0.19.0 | ✅ | 🥇 随身主力 | QQ+飞书+微信+ClawChat |
+| **Note 7** | lavender | 660 | 6GB | A10 | 2026.7.1-2 | v0.19.0 | ✅ | 🥈 家里轻量 | QQ+飞书 |
+| **MIX 2S** | polaris | 845 | 6GB | A10 | 2026.7.1-2 | v0.19.0 | ✅ | 🥉 稳定副机 | QQ+飞书 |
+| **Note 4X** | mido | 625 | 3GB | A7 | 2026.7.1-2 | — | — | 🏅 韧性备机 | QQ+飞书 |
 
 ```
 TS 组网: K60 · Note 7 · MIX 2S  |  Note 4X 仅 LAN (A7不支持)
