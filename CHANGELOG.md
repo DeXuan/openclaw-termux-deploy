@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] — 2026-07-29
+
+### Added
+- 🧠 **Hermes Agent 共部署支持** — 工具箱 v2.0.0，新增 `fleet-scan`/`hermes` CLI 命令，仪表盘双引擎标识
+- 📊 `scripts/fleet_scan.sh` — 全队 9 维并行体检 + HTML 报告生成
+- 🔧 `scripts/deploy-model-config.sh` — 统一模型配置注入（OpenClaw + Hermes），API Key 从环境变量读取
+- 🩺 `scripts/healthcheck.sh` — 自愈统一引擎，4 个 wrapper 从 282 行合并为 106 行（64% 减少）
+- 🤖 `scripts/oc-model-watchdog.sh` — OpenClaw 模型额度/故障自动 failover
+- 🔄 `scripts/sync-oc-models.py` — 模型配置跨设备同步
+- 🎛️ `scripts/gen_pools.py` — 96 模型零重叠分配 + Hermes 专属池生成
+- 📡 `scripts/hermes-mesh-sync.sh` — Hermes rsync 双向 mesh（memories/skills）
+- 📋 `scripts/hermes-{k60,mix2s,note7}.yaml` — 三设备 Hermes 模型参考配置
+- 🛡️ `scripts/pre-push-check.sh` — Pre-push 本地验证
+
+### Changed
+- 📖 README 中/EN 全面更新：Hermes 双引擎、TencentDB Memory、机队体检、ClawChat 章节
+- 🖥️ 工具箱 `openclaw-deploy` v1.0.0→v2.0.0：标题 OpenClaw+Hermes，设备标识双引擎
+- 🩺 自愈脚本合并：4×独立 → 1 引擎 + 4 wrapper（`healthcheck.sh`）
+- 🗑️ 移除 `K60/MIX2S/Note4X/Note7-deploy.sh`（硬编码 API Key 安全风险）
+- 🗂️ `scripts/README.md` 重写：新增 9 个脚本文档（fleet_scan/watchdog/sync 等）
+- 🔧 `lib/menus.sh`：修复 service_menu 重复键位 bug，新增 Hermes E2E 菜单
+- 🐛 `scripts/restore-configs.sh`：修复 K60 用户 u0_a197→u0_a129
+
+### Security
+- 🔐 移除 4 个 `*-deploy.sh` 文件中的硬编码阿里云百炼 API Key（转为 `deploy-model-config.sh` 环境变量方式）
+
 ## [2.6.0] — 2026-07-26
 
 ### Added (P3–P4 工具箱扩展)

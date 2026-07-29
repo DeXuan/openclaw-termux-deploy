@@ -16,7 +16,7 @@ echo ""
 if [ -f ~/.fleet-devices.conf ]; then
   . ~/.fleet-devices.conf
 else
-  K60_SSH="u0_a197@100.118.60.29:8022"
+  K60_SSH="u0_a129@100.118.60.29:8022"
   NOTE7_SSH="u0_a171@100.91.94.44:8022"
   MIX2S_SSH="u0_a129@100.104.72.125:8022"
   NOTE4X_SSH="u0_a129@192.168.1.19:8022"

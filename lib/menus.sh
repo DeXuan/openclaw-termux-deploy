@@ -383,7 +383,7 @@ service_menu() {
   menu_item "3" "🧠" "本机 HM 状态"   "Hermes gateway 状态 + E2E"
   menu_item "4" "📋" "本机日志"        "实时跟踪 gateway 日志"
   menu_item "5" "🔥" "远程重启 K60"    "SSH 到 K60 重启 gateway"
-  menu_item "5" "🍃" "远程重启 N7"     "SSH 到 Note 7 重启 gateway"
+  menu_item "6" "🍃" "远程重启 N7"     "SSH 到 Note 7 重启 gateway"
   echo -e "  ${C_BOLD}[0]${C_RESET} 返回"
   echo
   read -r -p "$(echo -e "  ${C_BOLD}>${C_RESET} ")" choice
@@ -408,15 +408,10 @@ service_menu() {
       local gw; gw=$(check_gateway)
       echo -e "  Gateway: $( [ "$gw" = "200" ] && pill_ok || pill_off )"
       ;;
-    3) log_step "实时日志 (Ctrl+C 返回菜单)"; tail -f "$PREFIX/var/log/sv/openclaw/current" 2>/dev/null || log_fail "日志不可用" ;;
-    4)
-      confirm "确认重启 K60 gateway？" || { show_menu; return; }
-      ssh_device K60 'export SVDIR=$PREFIX/var/service && sv restart openclaw' && log_ok "K60 已重启" || log_fail "失败"
-      ;;
-    5)
-      confirm "确认重启 Note 7 gateway？" || { show_menu; return; }
-      ssh_device Note7 'export SVDIR=$PREFIX/var/service && sv restart openclaw' && log_ok "N7 已重启" || log_fail "失败"
-      ;;
+    3) if is_termux; then export SVDIR="$PREFIX/var/service"; hm=$(sv status hermes-gateway 2>/dev/null|head -1||echo "N/A"); echo -e "\n  Hermes: $hm"; echo -e "  [t] E2E测试  [0] 返回"; read -r -p "  > " hmc; [ "$hmc" = "t" ] && { cd ~/.hermes && source .env && timeout 20 hermes chat -q "只回复OK" --yolo --max-turns 1 2>&1 || log_fail "E2E 失败"; }; else log_info "SSH到目标设备运行"; fi ;;
+    4) log_step "实时日志 (Ctrl+C 返回)"; tail -f "$PREFIX/var/log/sv/openclaw/current" 2>/dev/null || log_fail "日志不可用" ;;
+    5) confirm "确认重启 K60？" || { show_menu; return; }; ssh_device K60 'export SVDIR=$PREFIX/var/service && sv restart openclaw' && log_ok "K60 已重启" || log_fail "失败" ;;
+    6) confirm "确认重启 Note 7？" || { show_menu; return; }; ssh_device Note7 'export SVDIR=$PREFIX/var/service && sv restart openclaw' && log_ok "N7 已重启" || log_fail "失败" ;;
   esac
   press_enter; show_menu
 }
