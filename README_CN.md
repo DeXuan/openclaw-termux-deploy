@@ -2,10 +2,16 @@
 
 [![GitHub Stars](https://img.shields.io/github/stars/DeXuan/openclaw-termux-deploy?style=flat&color=yellow)](https://github.com/DeXuan/openclaw-termux-deploy/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.7.1--2-blue)](https://openclaw.ai)
+[![Version](https://img.shields.io/badge/version-v2.7.0-blue)](https://github.com/DeXuan/openclaw-termux-deploy/releases)
+[![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.7.1--2-6366f1)](https://openclaw.ai)
+[![Hermes](https://img.shields.io/badge/Hermes-v0.19.0-8b5cf6)](https://hermesagent.org.cn)
 [![Android](https://img.shields.io/badge/Android-7%2B-brightgreen)](https://www.android.com/)
 [![Termux](https://img.shields.io/badge/Termux-F--Droid-orange)](https://f-droid.org/packages/com.termux/)
 [![ShellCheck](https://github.com/DeXuan/openclaw-termux-deploy/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/DeXuan/openclaw-termux-deploy/actions/workflows/shellcheck.yml)
+[![Smoke Test](https://github.com/DeXuan/openclaw-termux-deploy/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/DeXuan/openclaw-termux-deploy/actions/workflows/smoke-test.yml)
+[![Tests](https://img.shields.io/badge/tests-54%20passed-success)](https://github.com/DeXuan/openclaw-termux-deploy/tree/main/tests)
+[![TencentDB](https://img.shields.io/badge/TencentDB-Memory%20v1.0.1-teal)](https://github.com/TencentCloud/tagent-memory)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](.github/CONTRIBUTING.md)
 
 > 📖 [English README](README.md) | **中文**
 
