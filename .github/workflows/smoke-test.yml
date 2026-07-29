@@ -124,6 +124,24 @@ jobs:
           if [ $FAIL -eq 0 ]; then echo "All consistency checks passed"; fi
           exit $FAIL
 
+      - name: Unit Tests
+        run: |
+          echo "=== 单元测试 ==="
+          FAIL=0
+          # Python tests
+          echo "--- feishu_push ---"
+          python3 tests/test_feishu_push.py -q 2>&1 || { echo "FAIL: feishu_push"; FAIL=1; }
+          # Shell tests
+          echo "--- healthcheck ---"
+          bash tests/test_healthcheck.sh 2>&1 || { echo "FAIL: healthcheck"; FAIL=1; }
+          echo "--- deploy_config ---"
+          bash tests/test_deploy_config.sh 2>&1 || { echo "FAIL: deploy_config"; FAIL=1; }
+          echo "--- fleet_scan ---"
+          bash tests/test_fleet_scan.sh 2>&1 || { echo "FAIL: fleet_scan"; FAIL=1; }
+          if [ $FAIL -eq 0 ]; then echo "All unit tests passed"; fi
+          exit $FAIL
+        timeout-minutes: 2
+
       - name: ShellCheck (warning level, full coverage)
         uses: ludeeus/action-shellcheck@master
         with:

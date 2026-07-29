@@ -97,6 +97,36 @@ class TestFeishuPush(unittest.TestCase):
         code, out, err = self._run("-m", "arg test message")
         self.assertNotEqual(code, 1)
 
+    # ── 边界条件 ──
+
+    def test_empty_stdin(self):
+        """空 stdin → exit 1（等同于无消息）"""
+        code, out, err = self._run(stdin_text="")
+        self.assertEqual(code, 1)
+
+    def test_large_message(self):
+        """大消息(10KB) → 不因长度崩溃"""
+        msg = "x" * 10240
+        code, out, err = self._run("-m", msg, conf_content=VALID_CONF)
+        self.assertNotEqual(code, 2, msg=f"config rejected: {err}")
+
+    def test_special_chars(self):
+        """特殊字符消息 → 正常处理"""
+        msg = "🚀 测试 <>&\"'\\n\\t 中文"
+        code, out, err = self._run("-m", msg, conf_content=VALID_CONF)
+        self.assertNotEqual(code, 2, msg=f"config rejected: {err}")
+
+    def test_multi_line_stdin(self):
+        """多行 stdin → 正常读取"""
+        code, out, err = self._run(stdin_text="line1\nline2\nline3")
+        self.assertNotEqual(code, 1, msg=f"exit 1: {err}")
+
+    def test_conf_extra_fields(self):
+        """配置文件有额外字段 → 不影响加载"""
+        conf = VALID_CONF + "EXTRA_FIELD=ignored\nANOTHER=also_ignored\n"
+        code, out, err = self._run("-m", "test", conf_content=conf)
+        self.assertNotEqual(code, 2, msg=f"config rejected: {err}")
+
 
 if __name__ == "__main__":
     if not os.path.exists(FEISHU_PUSH):
