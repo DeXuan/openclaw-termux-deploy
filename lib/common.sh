@@ -309,7 +309,7 @@ fleet_status_bar() {
 
 # ═══ Menu Item ═══
 menu_item() {
-  local key="$1" icon="$2" title="$3" desc="$4"
+  local key="$1" icon="$2" title="$3" desc="${4:-}"
   printf "  ${C_BOLD}${C_CYAN}%s${C_RESET}   %s ${C_BOLD}%-22s${C_RESET}${C_DIM}%s${C_RESET}\n" \
     "$key" "$icon" "$title" "$desc"
 }
