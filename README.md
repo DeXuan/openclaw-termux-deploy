@@ -46,7 +46,7 @@ This single command installs **Node.js + OpenClaw + runit + auto-boot** on any A
 | **Note 4X** 🪨 | 625 | 3GB | A7 | 2026.7.1-2 | — | — | QQ + Feishu |
 
 > 🔥 Flagship · ⚡ Stable secondary · 🍃 Lightweight · 🪨 Resilient (A7, 3GB RAM — extreme efficiency)
-![Uploading 868d278c15b2f4729266be07662925ac.png…]()
+<img width="1920" height="1080" alt="868d278c15b2f4729266be07662925ac" src="https://github.com/user-attachments/assets/cba0aeef-8e91-4950-bfa4-d4b4be343991" />
 
 ---
 
