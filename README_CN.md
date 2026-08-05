@@ -44,6 +44,7 @@ Termux 里粘贴执行，~10 分钟自动完成：Node.js + OpenClaw + runit 保
 | **Note 4X** 🪨 | 625 | 3GB | A7 | 2026.7.1-2 | — | — | QQ + 飞书 |
 
 > 🔥 主力机 · ⚡ 稳定副机 · 🍃 轻量备机 · 🪨 韧性备机（Android 7、3GB RAM 极限运行）
+<img width="1920" height="1080" alt="868d278c15b2f4729266be07662925ac" src="https://github.com/user-attachments/assets/34e25a01-6ceb-4d99-8acc-672e1fc63c64" />
 
 ---
 
